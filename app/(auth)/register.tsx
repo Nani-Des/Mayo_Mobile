@@ -12,7 +12,7 @@ export default function Register() {
       email,
       password,
       options: {
-        emailRedirectTo: "http://localhost:8081/confirmation",
+        emailRedirectTo: "mayoclinicapp://(auth)/confirmation",
       },
     });
 
