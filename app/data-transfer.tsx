@@ -65,7 +65,7 @@ export default function DataTransferScreen() {
     { title: 'Bluetooth', desc: 'Nearby devices', icon: 'bluetooth', color: '#28a745' },
     { title: 'WiFi Direct', desc: 'High-speed P2P', icon: 'wifi', color: '#0a7ea4' },
     { title: 'USB Cable', desc: 'Direct connection', icon: 'cable.connector', color: '#ffc107' },
-    { title: 'QR Code', desc: 'Scan to share', icon: 'qr-code', color: '#dc3545' },
+    { title: 'QR Code', desc: 'Scan to share', icon: 'qrcode', color: '#dc3545' },
   ];
 
   if (showQRScanner || showQRGenerator) {
@@ -147,14 +147,14 @@ export default function DataTransferScreen() {
           <View style={styles.row}>
             <Button
               title="Receive Data"
-              icon="download"
+              icon="square.and.arrow.down"
               style={{ flex: 1, marginRight: 8 }}
               onPress={() => { }}
             />
             <Button
               variant="outline"
               title="Generate QR"
-              icon="qr-code"
+              icon="qrcode"
               style={{ flex: 1, marginLeft: 8 }}
               onPress={() => setShowQRGenerator(true)}
             />
