@@ -1,53 +1,90 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Mayo Mobile - Premium Design System
+ * 
+ * A sophisticated medical-grade color palette utilizing:
+ * - Primary: Mayo Blue (Deep, Trustworthy)
+ * - Secondary: Teal/Cyan (Calm, Clean)
+ * - Neutrals: Slate (Modern, Professional)
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const palette = {
+  // Brand Colors
+  mayoBlue: {
+    light: '#0284C7', // Sky 600
+    dark: '#38BDF8',  // Sky 400
+    deep: '#0369A1',  // Sky 700
+  },
+
+  // Validation
+  success: '#10B981', // Emerald 500
+  warning: '#F59E0B', // Amber 500
+  error: '#EF4444',   // Red 500
+
+  // Neutrals
+  slate: {
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    300: '#CBD5E1',
+    400: '#94A3B8',
+    500: '#64748B',
+    600: '#475569',
+    700: '#334155',
+    800: '#1E293B',
+    900: '#0F172A',
+    950: '#020617',
+  }
+};
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: palette.slate[900],
+    textSecondary: palette.slate[500],
+    background: palette.slate[50], // Slightly off-white for less eye strain
+    backgroundSecondary: '#FFFFFF', // Pure white for cards
+    tint: palette.mayoBlue.light,
+    icon: palette.slate[500],
+    tabIconDefault: palette.slate[400],
+    tabIconSelected: palette.mayoBlue.light,
+    border: palette.slate[200],
+    card: '#FFFFFF',
+    success: palette.success,
+    warning: palette.warning,
+    error: palette.error,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: palette.slate[100],
+    textSecondary: palette.slate[400],
+    background: palette.slate[950], // Deep elegant dark
+    backgroundSecondary: palette.slate[900], // Slightly lighter for cards
+    tint: palette.mayoBlue.dark,
+    icon: palette.slate[400],
+    tabIconDefault: palette.slate[600],
+    tabIconSelected: palette.mayoBlue.dark,
+    border: palette.slate[800],
+    card: palette.slate[900],
+    success: palette.success,
+    warning: palette.warning,
+    error: palette.error,
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: 'System',
+    serif: 'Georgia',
+    mono: 'Menlo',
   },
-  default: {
-    sans: 'normal',
+  android: {
+    sans: 'Roboto',
     serif: 'serif',
-    rounded: 'normal',
     mono: 'monospace',
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+  default: {
+    sans: 'sans-serif',
+    serif: 'serif',
+    mono: 'monospace',
   },
 });

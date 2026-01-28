@@ -1,7 +1,7 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
+import { SymbolViewProps, SymbolWeight } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
@@ -18,7 +18,32 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-} as IconMapping;
+  'bluetooth': 'bluetooth',
+  'wifi': 'wifi',
+  'doc.text': 'description',
+  'arrow.triangle.swap': 'swap_horiz',
+  'location': 'location_on',
+  'calendar': 'calendar_today',
+  'heart': 'favorite',
+  'heart.fill': 'favorite',
+  'wifi.slash': 'wifi_off',
+  'cable.connector': 'usb',
+  'arrow.down.circle': 'file_download',
+  'qrcode': 'crop_free',
+  'qr-code': 'qr_code_2',
+  'download': 'cloud_download',
+  'lock.fill': 'lock',
+  'envelope.fill': 'email',
+  'person.circle': 'account_circle',
+  'info.circle': 'info',
+  'person.crop.rectangle.fill': 'card_membership',
+  'arrow.right.circle.fill': 'arrow_circle_right',
+  'checkmark.circle.fill': 'check_circle',
+  'doc.text.fill': 'description',
+  'person.fill': 'person',
+  'person': 'person',
+  'lock': 'lock',
+} as unknown as IconMapping;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

@@ -1,112 +1,191 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Collapsible } from '@/components/ui/collapsible';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function TabTwoScreen() {
+  const router = useRouter();
+  const tintColor = useThemeColor({}, 'tint');
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+    <ThemedView style={styles.container}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Hero Section */}
+        <LinearGradient
+          colors={['#0284C7', '#0369A1']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.iconCircle}>
+              <IconSymbol size={48} color="#0284C7" name="info.circle" />
+            </View>
+            <ThemedText type="hero" style={styles.headerTitle}>
+              Mayo EMR
             </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+            <ThemedText style={styles.headerSubtitle}>
+              Secure. Offline-first. Ghana-focused.
+            </ThemedText>
+          </View>
+        </LinearGradient>
+
+        <View style={styles.content}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Key Features</ThemedText>
+
+          <View style={styles.featuresGrid}>
+            <Card variant="elevated" style={styles.featureCard}>
+              <IconSymbol name="wifi.slash" size={32} color={tintColor} style={styles.featureIcon} />
+              <ThemedText type="cardTitle">Offline-First</ThemedText>
+              <ThemedText type="caption" style={styles.featureText}>Works without internet connectivity</ThemedText>
+            </Card>
+
+            <Card variant="elevated" style={styles.featureCard}>
+              <IconSymbol name="lock.fill" size={32} color={Colors.light.success} style={styles.featureIcon} />
+              <ThemedText type="cardTitle">Secure</ThemedText>
+              <ThemedText type="caption" style={styles.featureText}>End-to-end encrypted local storage</ThemedText>
+            </Card>
+
+            <Card variant="elevated" style={styles.featureCard}>
+              <IconSymbol name="arrow.triangle.swap" size={32} color={Colors.light.warning} style={styles.featureIcon} />
+              <ThemedText type="cardTitle">Transfer</ThemedText>
+              <ThemedText type="caption" style={styles.featureText}>Share via Bluetooth, WiFi, or QR</ThemedText>
+            </Card>
+
+            <Card variant="elevated" style={styles.featureCard}>
+              <IconSymbol name="person.crop.rectangle.fill" size={32} color={Colors.light.error} style={styles.featureIcon} />
+              <ThemedText type="cardTitle">Ghana Card</ThemedText>
+              <ThemedText type="caption" style={styles.featureText}>National ID integration support</ThemedText>
+            </Card>
+          </View>
+
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Documentation</ThemedText>
+
+          <Card variant="outlined" style={styles.docItem}>
+            <Collapsible title="Offline Architecture">
+              <ThemedText style={styles.collapsibleText}>
+                Work seamlessly without internet connectivity. All data is securely stored on your device and syncs automatically when online.
+              </ThemedText>
+            </Collapsible>
+          </Card>
+
+          <Card variant="outlined" style={styles.docItem}>
+            <Collapsible title="Data Transfer Protocols">
+              <ThemedText style={styles.collapsibleText}>
+                Transfer medical records securely between devices using:
+              </ThemedText>
+              <ThemedText style={styles.listItem}>• Bluetooth Low Energy</ThemedText>
+              <ThemedText style={styles.listItem}>• WiFi Direct (P2P)</ThemedText>
+              <ThemedText style={styles.listItem}>• Encrypted QR Codes</ThemedText>
+
+              <Button
+                title="Try Transfer"
+                icon="arrow.right.circle.fill"
+                onPress={() => router.push('/data-transfer')}
+                style={{ marginTop: 16 }}
+              />
+            </Collapsible>
+          </Card>
+
+          <Card variant="outlined" style={styles.docItem}>
+            <Collapsible title="Security Standards">
+              <ThemedText style={styles.collapsibleText}>
+                Built with security and privacy in mind, featuring:
+              </ThemedText>
+              <ThemedText style={styles.listItem}>• AES-256 Encryption</ThemedText>
+              <ThemedText style={styles.listItem}>• Local-first Key Management</ThemedText>
+              <ThemedText style={styles.listItem}>• HIPAA-ready Audit Logs</ThemedText>
+            </Collapsible>
+          </Card>
+
+        </View>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
   },
-  titleContainer: {
+  header: {
+    paddingTop: 80,
+    paddingBottom: 40,
+    alignItems: 'center',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  headerContent: {
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  headerTitle: {
+    color: 'white',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  content: {
+    padding: 24,
+  },
+  sectionTitle: {
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  featuresGrid: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 16,
+    marginBottom: 32,
+  },
+  featureCard: {
+    width: '47%', // Slightly less than half to account for gap
+    padding: 16,
+    alignItems: 'center',
+    height: 180,
+    justifyContent: 'center',
+  },
+  featureIcon: {
+    marginBottom: 12,
+  },
+  featureText: {
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  docItem: {
+    marginBottom: 16,
+    padding: 0, // Let collapsible handle padding
+    overflow: 'hidden',
+    backgroundColor: 'white',
+  },
+  collapsibleText: {
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  listItem: {
+    marginBottom: 4,
+    opacity: 0.8,
   },
 });
