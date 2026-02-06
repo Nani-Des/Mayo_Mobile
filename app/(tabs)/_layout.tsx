@@ -10,7 +10,7 @@ export default function TabsLayout() {
 
   if (loading) return null;
 
-  if (!session) return <Redirect href="/(auth)/login" />;
+  // if (!session) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs
