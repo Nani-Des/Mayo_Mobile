@@ -35,7 +35,7 @@ const MAPPING = {
   'envelope.fill': 'email',
   'person.circle': 'account_circle',
   'info.circle': 'info',
-  'person.crop.rectangle.fill': 'card_membership',
+  'person.crop.rectangle.fill': 'credit_card',
   'arrow.right.circle.fill': 'arrow_circle_right',
   'checkmark.circle.fill': 'check_circle',
   'doc.text.fill': 'description',

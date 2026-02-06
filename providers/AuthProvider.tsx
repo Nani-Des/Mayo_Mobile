@@ -17,6 +17,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
+    }).catch((_err) => {
+      // Handle network or other errors gracefully
+      setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
