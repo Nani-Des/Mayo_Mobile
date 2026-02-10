@@ -1,74 +1,45 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-
-interface BLEDevice {
-  id: string;
-  name: string;
-  rssi: number;
-}
+import { BLEProtocol } from '@/lib/services/protocols/ble-protocol';
+import { DiscoveredDevice } from '@/lib/types/transfer';
+import { useState } from 'react';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface BLEDeviceListProps {
-  onDeviceSelected: (device: BLEDevice) => void;
+  onDeviceSelected: (device: DiscoveredDevice) => void;
 }
 
+const bleProtocol = new BLEProtocol();
+
 export function BLEDeviceList({ onDeviceSelected }: BLEDeviceListProps) {
-  const [devices, setDevices] = useState<BLEDevice[]>([]);
+  const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const itemBackgroundColor = useThemeColor({}, 'backgroundSecondary');
   const textColor = useThemeColor({}, 'text');
+  const tintColor = useThemeColor({}, 'tint');
 
-  // Simulate Bluetooth device discovery
-  useEffect(() => {
-    let scanInterval: ReturnType<typeof setInterval>;
+  const handleScan = async () => {
+    setIsScanning(true);
+    setError(null);
+    setDevices([]);
 
-    if (isScanning) {
-      // Simulate discovering devices
-      scanInterval = setInterval(() => {
-        const mockDevices: BLEDevice[] = [
-          { id: '1', name: 'Mayo Device 1', rssi: -65 },
-          { id: '2', name: 'Mayo Device 2', rssi: -72 },
-          { id: '3', name: 'Hospital Tablet', rssi: -58 },
-          { id: '4', name: 'Clinic Phone', rssi: -80 },
-        ];
-
-        // Randomly update the device list
-        if (Math.random() > 0.5) {
-          setDevices(prev => {
-            const newDevices = [...mockDevices];
-            // Shuffle array to simulate changing device order
-            return newDevices.sort(() => Math.random() - 0.5);
-          });
-        }
-      }, 3000);
-    }
-
-    return () => {
-      if (scanInterval) clearInterval(scanInterval);
-    };
-  }, [isScanning]);
-
-  const toggleScan = () => {
-    setIsScanning(!isScanning);
-    if (!isScanning) {
-      setDevices([]);
+    try {
+      const discoveredDevices = await bleProtocol.discover();
+      setDevices(discoveredDevices);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to scan for devices');
+      console.error('BLE scan error:', err);
+    } finally {
+      setIsScanning(false);
     }
   };
 
-  const renderDevice = ({ item }: { item: BLEDevice }) => (
-    <TouchableOpacity
-      style={[styles.deviceItem, { backgroundColor: itemBackgroundColor }]}
-      onPress={() => onDeviceSelected(item)}
-    >
-      <ThemedView style={styles.deviceInfo}>
-        <ThemedText style={styles.deviceName}>{item.name}</ThemedText>
-        <ThemedText style={styles.deviceRssi}>Signal: {item.rssi} dBm</ThemedText>
-      </ThemedView>
-      <ThemedText style={styles.connectButton}>Connect</ThemedText>
-    </TouchableOpacity>
-  );
+  const handleDeviceSelect = (device: DiscoveredDevice) => {
+    onDeviceSelected(device);
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -79,37 +50,59 @@ export function BLEDeviceList({ onDeviceSelected }: BLEDeviceListProps) {
       <TouchableOpacity
         style={[
           styles.scanButton,
-          isScanning ? styles.scanningButton : styles.idleButton
+          { backgroundColor: isScanning ? '#dc3545' : tintColor }
         ]}
-        onPress={toggleScan}
+        onPress={handleScan}
+        disabled={isScanning}
       >
-        <ThemedText style={styles.buttonText}>
-          {isScanning ? 'Stop Scanning' : 'Start Scanning'}
-        </ThemedText>
+        {isScanning ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <ThemedText style={styles.buttonText}>
+            {devices.length > 0 ? 'Scan Again' : 'Start Scanning'}
+          </ThemedText>
+        )}
       </TouchableOpacity>
 
       {isScanning && (
-        <ThemedText style={styles.scanningText}>
+        <ThemedText style={[styles.scanningText, { color: tintColor }]}>
           Scanning for nearby devices...
         </ThemedText>
       )}
 
+      {error && (
+        <ThemedText style={styles.errorText}>
+          {error}
+        </ThemedText>
+      )}
+
       {devices.length > 0 ? (
-        <FlatList
-          data={devices}
-          renderItem={renderDevice}
-          keyExtractor={(item) => item.id}
-          style={styles.deviceList}
-        />
-      ) : (
+        <View style={styles.deviceList}>
+          {devices.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.deviceItem, { backgroundColor: itemBackgroundColor }]}
+              onPress={() => handleDeviceSelect(item)}
+            >
+              <ThemedView style={styles.deviceInfo}>
+                <ThemedText style={styles.deviceName}>{item.name}</ThemedText>
+                {item.rssi && (
+                  <ThemedText style={styles.deviceRssi}>Signal: {item.rssi} dBm</ThemedText>
+                )}
+              </ThemedView>
+              <ThemedText style={[styles.connectButton, { color: tintColor }]}>
+                Connect
+              </ThemedText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : !isScanning && !error ? (
         <ThemedView style={styles.emptyState}>
           <ThemedText style={styles.emptyText}>
-            {isScanning
-              ? 'No devices found yet...'
-              : 'Tap "Start Scanning" to discover nearby devices'}
+            Tap "Start Scanning" to discover nearby devices
           </ThemedText>
         </ThemedView>
-      )}
+      ) : null}
 
       <ThemedText style={styles.note}>
         Make sure the other device has Bluetooth enabled and is discoverable
@@ -131,12 +124,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 16,
     alignItems: 'center',
-  },
-  idleButton: {
-    backgroundColor: '#0a7ea4',
-  },
-  scanningButton: {
-    backgroundColor: '#dc3545',
+    minHeight: 50,
+    justifyContent: 'center',
   },
   buttonText: {
     color: 'white',
@@ -144,9 +133,14 @@ const styles = StyleSheet.create({
   },
   scanningText: {
     textAlign: 'center',
-    color: '#0a7ea4',
     fontStyle: 'italic',
     marginBottom: 16,
+  },
+  errorText: {
+    textAlign: 'center',
+    color: '#dc3545',
+    marginBottom: 16,
+    fontWeight: '600',
   },
   deviceList: {
     maxHeight: 300,
@@ -180,7 +174,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   connectButton: {
-    color: '#0a7ea4',
     fontWeight: 'bold',
   },
   emptyState: {

@@ -17,7 +17,6 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { BLEDeviceList } from '@/components/ui/ble-device-list';
 import { QRGenerator } from '@/components/ui/qr-generator';
 import { QRScanner } from '@/components/ui/qr-scanner';
-import { TransferProgress } from '@/components/ui/transfer-progress';
 import { USBTransfer } from '@/components/ui/usb-transfer';
 import { WiFiDirectManager } from '@/components/ui/wifi-direct-manager';
 
@@ -29,8 +28,6 @@ export default function DataTransferScreen() {
     const borderColor = useThemeColor({}, 'border');
 
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-    const [isTransferring, setIsTransferring] = useState(false);
-    const [transferProgress, setTransferProgress] = useState(0);
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [showQRGenerator, setShowQRGenerator] = useState(false);
     const [versionInfo] = useState({
@@ -41,24 +38,18 @@ export default function DataTransferScreen() {
 
     const handleTransfer = (method: string) => {
         setSelectedMethod(method);
+
         if (method === 'QR Code') {
             setShowQRScanner(true);
             return;
         }
-        setIsTransferring(true);
-        setTransferProgress(0);
-        // Simulating transfer logic preserved...
-        const interval = setInterval(() => {
-            setTransferProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setIsTransferring(false);
-                    Alert.alert('Transfer Complete', `Data successfully transferred via ${method}`);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 500);
+
+        // Show message that user needs to connect to a device first
+        Alert.alert(
+            'Connect to Device',
+            `To transfer via ${method}, please:\n\n1. Scan for nearby devices below\n2. Select a device to connect\n3. Then initiate the transfer`,
+            [{ text: 'OK' }]
+        );
     };
 
     const methods = [
@@ -115,29 +106,20 @@ export default function DataTransferScreen() {
 
                 <View style={styles.content}>
 
-                    {isTransferring ? (
-                        <Card style={styles.progressCard}>
-                            <ThemedText type="title">Sending...</ThemedText>
-                            <TransferProgress method={selectedMethod || ''} progress={transferProgress} />
-                        </Card>
-                    ) : (
-                        <View>
-                            <ThemedText type="subtitle" style={styles.sectionTitle}>Transfer Methods</ThemedText>
-                            <View style={styles.grid}>
-                                {methods.map((m, i) => (
-                                    <TouchableOpacity key={i} style={styles.gridItem} onPress={() => handleTransfer(m.title)} activeOpacity={0.8}>
-                                        <Card variant="elevated" style={styles.methodCard}>
-                                            <View style={[styles.methodIcon, { backgroundColor: m.color + '20' }]}>
-                                                <IconSymbol name={m.icon as any} size={28} color={m.color} />
-                                            </View>
-                                            <ThemedText type="cardTitle" style={{ marginBottom: 4 }}>{m.title}</ThemedText>
-                                            <ThemedText type="caption">{m.desc}</ThemedText>
-                                        </Card>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-                    )}
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>Transfer Methods</ThemedText>
+                    <View style={styles.grid}>
+                        {methods.map((m, i) => (
+                            <TouchableOpacity key={i} style={styles.gridItem} onPress={() => handleTransfer(m.title)} activeOpacity={0.8}>
+                                <Card variant="elevated" style={styles.methodCard}>
+                                    <View style={[styles.methodIcon, { backgroundColor: m.color + '20' }]}>
+                                        <IconSymbol name={m.icon as any} size={28} color={m.color} />
+                                    </View>
+                                    <ThemedText type="cardTitle" style={{ marginBottom: 4 }}>{m.title}</ThemedText>
+                                    <ThemedText type="caption">{m.desc}</ThemedText>
+                                </Card>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Nearby Devices</ThemedText>
                     <Card variant="outlined" style={styles.deviceListCard}>
