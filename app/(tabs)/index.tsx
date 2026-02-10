@@ -51,38 +51,40 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Hero Section */}
-        <LinearGradient
-          colors={['#0284C7', '#0369A1']} // New Mayo Blue Palette
-          style={[styles.header, { paddingTop: insets.top + 20 }]}
-        >
-          <View style={styles.headerTop}>
-            <View>
-              <ThemedText style={styles.greeting}>Good Morning,</ThemedText>
-              <ThemedText type="hero" style={styles.username}>Sarah Doe</ThemedText>
-            </View>
-            <TouchableOpacity style={styles.profileButton}>
-              <IconSymbol name="person.circle" size={40} color="white" />
-            </TouchableOpacity>
+      {/* Fixed Header */}
+      <LinearGradient
+        colors={['#0284C7', '#0369A1']}
+        style={[styles.header, { paddingTop: insets.top + 20 }]}
+      >
+        <View style={styles.headerTop}>
+          <View>
+            <ThemedText style={styles.greeting}>Good Morning,</ThemedText>
+            <ThemedText type="hero" style={styles.username}>Sarah Doe</ThemedText>
           </View>
+          <TouchableOpacity style={styles.profileButton}>
+            <IconSymbol name="person.circle" size={40} color="white" />
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.infoCard}>
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <ThemedText style={styles.infoLabel}>Heart Rate</ThemedText>
-              <View style={styles.infoValueContainer}>
-                <IconSymbol name="heart.fill" size={16} color="#EF4444" style={{ marginRight: 6 }} />
-                <ThemedText type="defaultSemiBold" style={styles.infoValue}>72 bpm</ThemedText>
-              </View>
+              <IconSymbol name="heart.fill" size={16} color="white" />
+              <ThemedText style={styles.infoLabel}>Health Score</ThemedText>
+              <ThemedText type="defaultSemiBold" style={styles.infoValue}>92%</ThemedText>
             </View>
-            <View style={styles.divider} />
+            <View style={styles.infoDivider} />
             <View style={styles.infoItem}>
+              <IconSymbol name="doc.text.fill" size={16} color="white" />
               <ThemedText style={styles.infoLabel}>Next Visit</ThemedText>
               <ThemedText type="defaultSemiBold" style={styles.infoValue}>Oct 24</ThemedText>
             </View>
           </View>
-        </LinearGradient>
+        </View>
+      </LinearGradient>
 
+      {/* Scrollable Content */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <ThemedView style={styles.content}>
           {/* Quick Access Grid */}
           <View style={styles.sectionHeader}>
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingBottom: 60,
+    paddingBottom: 24,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
@@ -157,7 +159,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   greeting: {
     color: 'rgba(255,255,255,0.8)',
@@ -171,39 +173,39 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   infoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 8,
+    marginTop: 8,
+  },
+  infoRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'space-around',
   },
   infoItem: {
     flex: 1,
     alignItems: 'center',
   },
-  divider: {
+  infoDivider: {
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: 16,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   infoLabel: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  infoValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 11,
+    marginTop: 4,
   },
   infoValue: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    marginTop: -40, // Overlap effect
+    marginTop: -20, // Reduced overlap to prevent covering text
   },
   sectionHeader: {
     flexDirection: 'row',

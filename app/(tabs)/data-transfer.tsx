@@ -92,18 +92,23 @@ export default function DataTransferScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <LinearGradient
-                    colors={['#0284C7', '#0369A1']}
-                    style={[styles.header, { paddingTop: insets.top + 20 }]}
-                >
-                    <View style={styles.iconCircle}>
-                        <IconSymbol name="arrow.triangle.swap" size={40} color="#0284C7" />
-                    </View>
-                    <ThemedText type="hero" style={styles.headerTitle}>Data Transfer</ThemedText>
-                    <ThemedText style={styles.headerSubtitle}>Securely share records offline</ThemedText>
-                </LinearGradient>
+            {/* Fixed Header */}
+            <LinearGradient
+                colors={['#0284C7', '#0369A1']}
+                style={[styles.header, { paddingTop: insets.top + 20 }]}
+            >
+                <View style={styles.iconCircle}>
+                    <IconSymbol name="arrow.triangle.swap" size={40} color="#0284C7" />
+                </View>
+                <ThemedText type="hero" style={styles.headerTitle}>Data Transfer</ThemedText>
+                <ThemedText style={styles.headerSubtitle}>Securely share records offline</ThemedText>
+            </LinearGradient>
 
+            {/* Scrollable Content */}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100 }}
+            >
                 <View style={styles.content}>
 
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Transfer Methods</ThemedText>
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingBottom: 40,
+        paddingBottom: 24,
         alignItems: 'center',
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
@@ -176,20 +181,20 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
         elevation: 5,
     },
     headerTitle: {
         color: 'white',
-        marginBottom: 8,
+        marginBottom: 4,
     },
     headerSubtitle: {
         color: 'rgba(255,255,255,0.8)',
-        fontSize: 16,
+        fontSize: 14,
     },
     content: {
         padding: 24,
