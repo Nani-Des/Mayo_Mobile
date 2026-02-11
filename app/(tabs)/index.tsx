@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -9,6 +9,8 @@ import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Text } from '@react-navigation/elements';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -53,6 +55,8 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Hero Section */}
+
+
         <LinearGradient
           colors={['#0284C7', '#0369A1']} // New Mayo Blue Palette
           style={[styles.header, { paddingTop: insets.top + 20 }]}
@@ -66,6 +70,7 @@ export default function HomeScreen() {
               <IconSymbol name="person.circle" size={40} color="white" />
             </TouchableOpacity>
           </View>
+
 
           <View style={styles.infoCard}>
             <View style={styles.infoItem}>
@@ -84,7 +89,60 @@ export default function HomeScreen() {
         </LinearGradient>
 
         <ThemedView style={styles.content}>
-          {/* Quick Access Grid */}
+
+           {/* Recent Activity */}
+          {/* <View style={styles.sectionHeader}>
+            <ThemedText type="subtitle">Recent Activity</ThemedText>
+            <TouchableOpacity>
+              <ThemedText type="link">See All</ThemedText>
+            </TouchableOpacity>
+          </View> */}
+{/* 
+          <Card variant="flat" style={[styles.recentList, { backgroundColor: useThemeColor({}, 'card') }]}>
+            {[1, 2].map((_, i) => (
+              <View key={i} style={[styles.recentItem, { borderBottomColor: useThemeColor({}, 'border') }]}>
+                <View style={[styles.recentIcon, { backgroundColor: i === 0 ? tintColor + '15' : Colors.light.success + '15' }]}>
+                  <IconSymbol name={i === 0 ? 'doc.text.fill' : 'checkmark.circle.fill'} size={20} color={i === 0 ? tintColor : Colors.light.success} />
+                </View>
+                <View style={styles.recentInfo}>
+                  <ThemedText type="defaultSemiBold">{i === 0 ? 'Lab Results Available' : 'Appointment Confirmed'}</ThemedText>
+                  <ThemedText type="caption">Today, 9:41 AM</ThemedText>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={useThemeColor({}, 'icon')} />
+              </View>
+            ))}
+          </Card> */}
+
+              <View>
+                <Text style={styles.headingText}>Recent Activity</Text>
+                <ScrollView horizontal = {true} style={styles.scrollcontainer}>
+                  
+                  <TouchableOpacity style={[styles.card, styles.cardRecent]} onPress={() => router.push('/diagnosis')}>
+
+                    <MaterialIcons name="local-hospital" size={32} color="#2ecc71" />
+                    <ThemedText>Diagnosis</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.card, styles.cardRecent]} onPress={() => router.push('/medications')}>
+                    <MaterialIcons name="medication" size={32} color="#e67e22" /> 
+                    <ThemedText>Medications</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.card, styles.cardRecent]} onPress={() => router.push('/pharmacy')} >
+                    <MaterialIcons name="local-pharmacy" size={32} color="#e67e22" /> 
+                    <ThemedText>Pharmacy</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.card, styles.cardRecent]} onPress={() => router.push('/lab-results')} >
+                    <MaterialIcons name="blood-type" size={32} color="#e67e22" /> 
+                    <ThemedText>Lab Results</ThemedText>
+                  </TouchableOpacity  >
+                  <View style={[styles.card, styles.cardRecent]}>
+                    <ThemedText>Consultation</ThemedText>
+                  </View>
+                  <View style={[styles.card, styles.cardRecent]}>
+                    <ThemedText>ANC</ThemedText>
+                  </View>
+                </ScrollView>
+              </View>
+              {/* Quick Access Grid */}
           <View style={styles.sectionHeader}>
             <ThemedText type="subtitle">Quick Access</ThemedText>
           </View>
@@ -109,29 +167,7 @@ export default function HomeScreen() {
           </View>
 
 
-          {/* Recent Activity */}
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Recent Activity</ThemedText>
-            <TouchableOpacity>
-              <ThemedText type="link">See All</ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          <Card variant="flat" style={[styles.recentList, { backgroundColor: useThemeColor({}, 'card') }]}>
-            {[1, 2].map((_, i) => (
-              <View key={i} style={[styles.recentItem, { borderBottomColor: useThemeColor({}, 'border') }]}>
-                <View style={[styles.recentIcon, { backgroundColor: i === 0 ? tintColor + '15' : Colors.light.success + '15' }]}>
-                  <IconSymbol name={i === 0 ? 'doc.text.fill' : 'checkmark.circle.fill'} size={20} color={i === 0 ? tintColor : Colors.light.success} />
-                </View>
-                <View style={styles.recentInfo}>
-                  <ThemedText type="defaultSemiBold">{i === 0 ? 'Lab Results Available' : 'Appointment Confirmed'}</ThemedText>
-                  <ThemedText type="caption">Today, 9:41 AM</ThemedText>
-                </View>
-                <IconSymbol name="chevron.right" size={20} color={useThemeColor({}, 'icon')} />
-              </View>
-            ))}
-          </Card>
-
+         
           {/* Offline Banner */}
           <Card variant="flat" style={[styles.offlineContainer, { backgroundColor: useThemeColor({}, 'background') }]}>
             <IconSymbol name="wifi.slash" size={16} color={useThemeColor({}, 'textSecondary')} style={{ marginRight: 8 }} />
@@ -268,4 +304,36 @@ const styles = StyleSheet.create({
     padding: 12,
     alignSelf: 'center',
   },
+
+   // Recent Activity horizontal scroll view styles
+  headingText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    paddingHorizontal: 8
+  }, 
+  scrollcontainer: {
+    padding: 8
+  },
+  card: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 4,
+    margin: 8,
+    
+  },
+  cardRecent: {
+    backgroundColor: Colors.light.background,
+    elevation: 6,
+    shadowOffset: {
+      width: 5,
+      height: 5
+    },
+    shadowColor: '#0b54c2',
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+  }
+
 });
