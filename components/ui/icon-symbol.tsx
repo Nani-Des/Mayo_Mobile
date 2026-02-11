@@ -14,35 +14,51 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
+  // Navigation & Home
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+
+  // Connectivity
   'bluetooth': 'bluetooth',
   'wifi': 'wifi',
-  'doc.text': 'description',
-  'arrow.triangle.swap': 'swap_horiz',
-  'location': 'location_on',
-  'calendar': 'calendar_today',
-  'heart': 'favorite',
-  'heart.fill': 'favorite',
-  'wifi.slash': 'wifi_off',
+  'wifi.slash': 'wifi-off',
   'cable.connector': 'usb',
-  'arrow.down.circle': 'file_download',
-  'qrcode': 'qr_code_2',
-  'square.and.arrow.down': 'file_download',
-  'lock.fill': 'lock',
-  'envelope.fill': 'email',
-  'person.circle': 'account_circle',
-  'info.circle': 'info',
-  'person.crop.rectangle.fill': 'card_membership',
-  'arrow.right.circle.fill': 'arrow_circle_right',
-  'checkmark.circle.fill': 'check_circle',
+
+  // Documents & Files
+  'doc.text': 'description',
   'doc.text.fill': 'description',
+  'square.and.arrow.down': 'download',
+  'arrow.down.circle': 'download',
+
+  // Transfer & Sync
+  'arrow.triangle.swap': 'swap-horiz',
+
+  // Location & Calendar
+  'location': 'place',
+  'calendar': 'event',
+
+  // User & Authentication
+  'person.circle': 'account-circle',
+  'person.crop.rectangle.fill': 'badge',
   'person.fill': 'person',
   'person': 'person',
+  'envelope.fill': 'email',
+  'lock.fill': 'lock',
   'lock': 'lock',
+
+  // Actions & Status
+  'heart': 'favorite-border',
+  'heart.fill': 'favorite',
+  'qrcode': 'qr-code-2',
+  'info.circle': 'info',
+  'arrow.right.circle.fill': 'arrow-circle-right',
+  'checkmark.circle.fill': 'check-circle',
 } as unknown as IconMapping;
+
+// Default fallback icon for unmapped symbols
+const FALLBACK_ICON: ComponentProps<typeof MaterialIcons>['name'] = 'help-outline';
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
@@ -61,5 +77,12 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  const iconName = MAPPING[name];
+
+  // Warn in development if icon is not mapped
+  if (__DEV__ && !iconName) {
+    console.warn(`IconSymbol: No MaterialIcons mapping found for "${name}". Using fallback icon.`);
+  }
+
+  return <MaterialIcons color={color} size={size} name={iconName || FALLBACK_ICON} style={style} />;
 }

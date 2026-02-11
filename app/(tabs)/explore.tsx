@@ -17,25 +17,26 @@ export default function TabTwoScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Hero Section */}
-        <LinearGradient
-          colors={['#0284C7', '#0369A1']}
-          style={styles.header}
-        >
-          <View style={styles.headerContent}>
-            <View style={styles.iconCircle}>
-              <IconSymbol size={48} color="#0284C7" name="info.circle" />
-            </View>
-            <ThemedText type="hero" style={styles.headerTitle}>
-              Mayo EMR
-            </ThemedText>
-            <ThemedText style={styles.headerSubtitle}>
-              Secure. Offline-first. Ghana-focused.
-            </ThemedText>
+      {/* Fixed Header */}
+      <LinearGradient
+        colors={['#0284C7', '#0369A1']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.iconCircle}>
+            <IconSymbol size={40} color="#0284C7" name="info.circle" />
           </View>
-        </LinearGradient>
+          <ThemedText type="hero" style={styles.headerTitle}>
+            Mayo EMR
+          </ThemedText>
+          <ThemedText style={styles.headerSubtitle}>
+            Secure. Offline-first. Ghana-focused.
+          </ThemedText>
+        </View>
+      </LinearGradient>
 
+      {/* Scrollable Content */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.content}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Key Features</ThemedText>
 
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 80,
-    paddingBottom: 40,
+    paddingBottom: 24,
     alignItems: 'center',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
@@ -125,13 +126,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -140,15 +141,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: 'white',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   headerSubtitle: {
     color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   content: {
     padding: 24,
+    marginTop: -20,
   },
   sectionTitle: {
     marginBottom: 16,
