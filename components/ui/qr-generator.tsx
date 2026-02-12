@@ -15,7 +15,7 @@ export function QRGenerator({ data, size = 200 }: QRGeneratorProps) {
       <ThemedText style={styles.instructions}>
         Doctor: Scan this code to authorize the transfer bridge.
       </ThemedText>
-      
+
       <View style={styles.qrContainer}>
         <QRCode
           value={data}
@@ -24,7 +24,7 @@ export function QRGenerator({ data, size = 200 }: QRGeneratorProps) {
           backgroundColor="#fff"
         />
       </View>
-      
+
       <ThemedText style={styles.note}>
         This code expires once the session is closed.
       </ThemedText>

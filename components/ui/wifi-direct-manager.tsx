@@ -1,17 +1,19 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
 interface WiFiDirectManagerProps {
-  onConnected: (networkInfo: any) => void;
+  onConnected: (networkInfo: { ssid: string; ipAddress: string }) => void;
   onDisconnected: () => void;
+  /** IP auto-filled from a QR scan — user can still edit before connecting */
+  prefillIp?: string;
 }
 
-export function WiFiDirectManager({ onConnected, onDisconnected }: WiFiDirectManagerProps) {
+export function WiFiDirectManager({ onConnected, onDisconnected, prefillIp }: WiFiDirectManagerProps) {
   const [isConnected, setIsConnected] = useState(false);
-  const [networkName, setNetworkName] = useState(''); // This will be your PC IP
+  const [networkName, setNetworkName] = useState('');
   const [password, setPassword] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
   const [ipAddress, setIpAddress] = useState('');
@@ -20,76 +22,89 @@ export function WiFiDirectManager({ onConnected, onDisconnected }: WiFiDirectMan
   const inputBorder = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
 
-  const handleConnect = async () => {
+  // Auto-fill IP whenever a new one arrives from QR scan
+  useEffect(() => {
+    if (prefillIp && !isConnected) {
+      setNetworkName(prefillIp);
+      setConnectionStatus('IP filled from QR — tap Connect');
+    }
+  }, [prefillIp]);
+
+  // Replace your handleConnect function with this updated logic
+const handleConnect = async () => {
     if (!networkName.trim()) {
-      setConnectionStatus('Please enter PC IP address');
-      return;
+        setConnectionStatus('Please enter PC IP address');
+        return;
     }
 
-    setConnectionStatus('Connecting to Station...');
+    setConnectionStatus('Connecting to Station…');
+
+    // Create a timeout so the app doesn't hang forever
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      // REAL CONNECTION: Fetching the handshake from your PC server on Port 3000
-      const response = await fetch(`http://${networkName}:3000/handshake`, {
-        method: 'GET',
-      });
-
-      if (response.ok) {
-        // Success logic
-        setIsConnected(true);
-        setIpAddress(networkName);
-        setConnectionStatus('Connected to Doctor PC');
-        
-        // Notify the parent screen that we are connected
-        onConnected({ 
-          ssid: 'Mayo_Secure_WiFi', 
-          ipAddress: networkName 
+        const response = await fetch(`http://${networkName}:3000/handshake`, {
+            method: 'GET',
+            signal: controller.signal,
         });
-      } else {
-        throw new Error('Station rejected connection');
-      }
-    } catch (error) {
-      // Failure logic
-      setIsConnected(false);
-      setConnectionStatus('Connection Failed');
-      Alert.alert(
-        "Station Offline", 
-        "Could not find the Doctor Station. Check your PC IP and ensure server.js is running."
-      );
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            setIsConnected(true);
+            setIpAddress(networkName);
+            setConnectionStatus('Connected to Doctor PC');
+            onConnected({ ssid: 'Hotspot_Network', ipAddress: networkName });
+        } else {
+            throw new Error('Station rejected');
+        }
+    } catch (error: any) {
+        clearTimeout(timeoutId);
+        setIsConnected(false);
+        setConnectionStatus('Connection Failed');
+        
+        const errorMsg = error.name === 'AbortError' 
+            ? 'Request timed out. Check Firewall.' 
+            : 'Could not find Station. Ensure PC is on the same Hotspot.';
+            
+        Alert.alert('Station Offline', errorMsg);
     }
-  };
+};
 
   const handleDisconnect = () => {
-    setConnectionStatus('Disconnecting...');
-
-    // Resetting states
     setIsConnected(false);
     setIpAddress('');
     setConnectionStatus('Disconnected');
-    
-    // This triggers the handleResetSecurity in your DataTransferScreen
     onDisconnected();
   };
 
+  const isConnecting = connectionStatus.includes('Connecting');
+
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="subtitle" style={styles.title}>
-        WiFi Direct Connection
-      </ThemedText>
+      <ThemedText type="subtitle" style={styles.title}>WiFi Direct Connection</ThemedText>
 
       {!isConnected ? (
         <>
           <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Doctor Station IP (PC IP)</ThemedText>
+            <ThemedText style={styles.label}>Doctor Station IP</ThemedText>
             <TextInput
-              style={[styles.input, { backgroundColor: inputBackground, borderColor: inputBorder, color: textColor }]}
+              style={[
+                styles.input,
+                { backgroundColor: inputBackground, borderColor: inputBorder, color: textColor },
+                prefillIp && networkName === prefillIp && styles.inputPrefilled,
+              ]}
               value={networkName}
               onChangeText={setNetworkName}
               placeholder="e.g. 192.168.1.15"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
-              editable={!connectionStatus.includes('Connecting')}
+              editable={!isConnecting}
             />
+            {prefillIp && networkName === prefillIp && (
+              <ThemedText style={styles.prefillHint}>✓ Auto-filled from QR scan</ThemedText>
+            )}
           </ThemedView>
 
           <ThemedView style={styles.inputGroup}>
@@ -101,33 +116,29 @@ export function WiFiDirectManager({ onConnected, onDisconnected }: WiFiDirectMan
               placeholder="Enter password"
               placeholderTextColor="#9CA3AF"
               secureTextEntry
-              editable={!connectionStatus.includes('Connecting')}
+              editable={!isConnecting}
             />
           </ThemedView>
 
           <TouchableOpacity
-            style={styles.connectButton}
+            style={[styles.connectButton, isConnecting && styles.buttonDisabled]}
             onPress={handleConnect}
-            disabled={connectionStatus.includes('Connecting')}
+            disabled={isConnecting}
           >
-            <ThemedText style={styles.buttonText}>Connect</ThemedText>
+            <ThemedText style={styles.buttonText}>
+              {isConnecting ? 'Connecting…' : 'Connect'}
+            </ThemedText>
           </TouchableOpacity>
         </>
       ) : (
-        <TouchableOpacity
-          style={styles.disconnectButton}
-          onPress={handleDisconnect}
-        >
+        <TouchableOpacity style={styles.disconnectButton} onPress={handleDisconnect}>
           <ThemedText style={styles.buttonText}>Disconnect</ThemedText>
         </TouchableOpacity>
       )}
 
       <ThemedView style={styles.statusContainer}>
         <ThemedText style={styles.statusLabel}>Status:</ThemedText>
-        <ThemedText style={[
-          styles.statusValue,
-          isConnected ? styles.connected : styles.disconnected
-        ]}>
+        <ThemedText style={[styles.statusValue, isConnected ? styles.connected : styles.disconnected]}>
           {connectionStatus}
         </ThemedText>
       </ThemedView>
@@ -152,8 +163,11 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 16 },
   label: { fontWeight: '600', marginBottom: 8 },
   input: { borderWidth: 1, borderRadius: 8, padding: 12 },
+  inputPrefilled: { borderColor: '#28a745', borderWidth: 2 },
+  prefillHint: { fontSize: 11, color: '#28a745', marginTop: 4, fontWeight: '600' },
   connectButton: { backgroundColor: '#28a745', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 16 },
   disconnectButton: { backgroundColor: '#dc3545', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 16 },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: 'white', fontWeight: 'bold' },
   statusContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
   statusLabel: { fontWeight: '600' },

@@ -30,11 +30,13 @@ export default function DataTransferScreen() {
     const [isHandshakeComplete, setIsHandshakeComplete] = useState(false);
     const [connectedPcIp, setConnectedPcIp] = useState<string | null>(null);
 
+    // IP extracted from QR scan — passed to WiFiDirectManager to auto-fill the input
+    const [scannedIp, setScannedIp] = useState<string | undefined>(undefined);
+
     const [currentSession] = useState(SyncService.getMockPatientHistory());
 
     const handleGenerateQR = () => {
         setShowQRGenerator(true);
-        // Handshake is confirmed once the doctor scans the QR — not just by opening it
     };
 
     const handleResetSecurity = () => {
@@ -77,10 +79,10 @@ export default function DataTransferScreen() {
                     style={[styles.header, { paddingTop: insets.top + 20 }]}
                 >
                     <ThemedText type="hero" style={styles.headerTitle}>
-                        {isScan ? 'Scan QR' : 'Doctor Handshake'}
+                        {isScan ? 'Scan Doctor QR' : 'Doctor Handshake'}
                     </ThemedText>
                     <ThemedText style={styles.headerSubtitle}>
-                        {isScan ? 'Align code within frame' : 'Let the doctor scan this code'}
+                        {isScan ? "Point at the QR on the Doctor's PC" : 'Let the doctor scan this code'}
                     </ThemedText>
                 </LinearGradient>
 
@@ -88,12 +90,28 @@ export default function DataTransferScreen() {
                     <Card style={styles.qrContainer}>
                         {isScan ? (
                             <QRScanner
-                                onQRCodeScanned={(data) => {
-                                    setShowQRScanner(false);
-                                    Alert.alert('Scanned', data);
-                                }}
-                                onCancel={() => setShowQRScanner(false)}
-                            />
+    onQRCodeScanned={(data, parsedIp) => {
+        if (scannedIp) return;
+
+        if (parsedIp) {
+            setScannedIp(parsedIp);
+            setConnectedPcIp(parsedIp); // Store the IP as the "Active" connection
+            setIsHandshakeComplete(true); // <--- THIS UNLOCKS THE USB COMPONENT IMMEDIATELY
+            
+            Alert.alert(
+                "Handshake Success", 
+                `Doctor PC (${parsedIp}) verified and USB bridge unlocked.`
+            );
+        }
+
+        setTimeout(() => {
+            setShowQRScanner(false);
+        }, 150);
+    }}
+    onCancel={() => setShowQRScanner(false)}
+/>
+
+
                         ) : (
                             <QRGenerator
                                 data={JSON.stringify({
@@ -130,7 +148,7 @@ export default function DataTransferScreen() {
                     <IconSymbol name="arrow.triangle.swap" size={40} color="#0284C7" />
                 </View>
                 <ThemedText type="hero" style={styles.headerTitle}>Data Transfer</ThemedText>
-                <ThemedText style={styles.headerSubtitle}>Securely share records offline</ThemedText>
+                <ThemedText style={styles.headerSubtitle}>Securely share records ofline</ThemedText>
             </LinearGradient>
 
             <ScrollView
@@ -168,19 +186,38 @@ export default function DataTransferScreen() {
                     {/* Step 1: Secure Handshake */}
                     <ThemedText type="subtitle" style={styles.sectionTitle}>1. Secure Handshake</ThemedText>
                     <View style={styles.row}>
+                        {/* Patient shows their own QR for the doctor to scan */}
                         <Button
                             variant="outline"
-                            title={isHandshakeComplete ? 'Handshake Verified ✓' : 'Generate Handshake QR'}
+                            title={isHandshakeComplete ? 'Verified ✓' : 'Show My QR'}
                             icon="qrcode"
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, marginRight: 8 }}
                             onPress={handleGenerateQR}
                         />
+                        {/* Patient scans doctor's QR — extracts PC IP automatically */}
+                        <Button
+                            variant="outline"
+                            title={scannedIp ? `IP: ${scannedIp}` : 'Scan Doctor QR'}
+                            icon="camera"
+                            style={{ flex: 1 }}
+                            onPress={() => setShowQRScanner(true)}
+                        />
                     </View>
+                    {scannedIp && (
+                        <ThemedText style={styles.ipHint}>
+                            ✓ IP auto-filled from QR — tap Connect below
+                        </ThemedText>
+                    )}
 
                     {/* Step 2: Establish Bridge */}
                     <ThemedText type="subtitle" style={styles.sectionTitle}>2. Establish Bridge</ThemedText>
                     <Card variant="flat" style={styles.statusCard}>
+                        {/*
+                         * prefillIp flows in from the QR scan.
+                         * WiFiDirectManager watches it via useEffect and auto-populates its input.
+                         */}
                         <WiFiDirectManager
+                            prefillIp={scannedIp}
                             onConnected={(info) => {
                                 setConnectedPcIp(info.ipAddress);
                                 setIsHandshakeComplete(true);
@@ -258,4 +295,5 @@ const styles = StyleSheet.create({
     divider: { height: 1, marginVertical: 16 },
     qrContainer: { height: 400, justifyContent: 'center', alignItems: 'center' },
     note: { fontSize: 12, textAlign: 'center', marginTop: 8, opacity: 0.6 },
+    ipHint: { fontSize: 12, color: '#28a745', fontWeight: '600', marginBottom: 8, marginTop: -4 },
 });
