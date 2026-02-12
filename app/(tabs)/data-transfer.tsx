@@ -10,57 +10,65 @@ import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-// Actually, let's keep the logic but replace the UI components with our new ones directly in this file for simplicity as per instructions to "apply styling".
-// However, TransferMethodCard seems to be a custom component. Let's check it later. For now, I'll rewrite the screen to use our new Cards.
-
-// Mock components replacement for simplicity in this artifact, assuming logic handles the rest
 import { BLEDeviceList } from '@/components/ui/ble-device-list';
 import { QRGenerator } from '@/components/ui/qr-generator';
 import { QRScanner } from '@/components/ui/qr-scanner';
 import { USBTransfer } from '@/components/ui/usb-transfer';
 import { WiFiDirectManager } from '@/components/ui/wifi-direct-manager';
+import { SyncService } from '@/app/services/SyncService';
 
 const { width } = Dimensions.get('window');
 
 export default function DataTransferScreen() {
     const insets = useSafeAreaInsets();
-    const tintColor = useThemeColor({}, 'tint');
     const borderColor = useThemeColor({}, 'border');
 
-    const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [showQRGenerator, setShowQRGenerator] = useState(false);
-    const [versionInfo] = useState({
-        currentVersion: 'v1.2.3',
-        lastUpdated: '2025-12-08 14:30:00',
-        deviceCount: 3,
-    });
 
-    const handleTransfer = (method: string) => {
-        setSelectedMethod(method);
+    // SECURITY STATES
+    const [isHandshakeComplete, setIsHandshakeComplete] = useState(false);
+    const [connectedPcIp, setConnectedPcIp] = useState<string | null>(null);
 
-        if (method === 'QR Code') {
-            setShowQRScanner(true);
+    const [currentSession] = useState(SyncService.getMockPatientHistory());
+
+    const handleGenerateQR = () => {
+        setShowQRGenerator(true);
+        // Handshake is confirmed once the doctor scans the QR — not just by opening it
+    };
+
+    const handleResetSecurity = () => {
+        setIsHandshakeComplete(false);
+        setConnectedPcIp(null);
+        Alert.alert('Security Locked', 'Connection severed. Handshake required to resume.');
+    };
+
+    // Send patient records to the connected Doctor Station PC
+    const handlePushData = async () => {
+        if (!connectedPcIp) {
+            Alert.alert('Connection Required', 'Please connect to the Doctor Station IP first.');
             return;
         }
 
-        // Show message that user needs to connect to a device first
-        Alert.alert(
-            'Connect to Device',
-            `To transfer via ${method}, please:\n\n1. Scan for nearby devices below\n2. Select a device to connect\n3. Then initiate the transfer`,
-            [{ text: 'OK' }]
-        );
+        try {
+            const response = await fetch(`http://${connectedPcIp}:3000/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentSession),
+            });
+
+            if (response.ok) {
+                Alert.alert('Transfer Success', 'Patient records sent to Doctor Station.');
+            } else {
+                throw new Error('Server returned an error');
+            }
+        } catch (error) {
+            Alert.alert('Transfer Failed', 'Make sure server.js is running on your PC.');
+        }
     };
 
-    const methods = [
-        { title: 'Bluetooth', desc: 'Nearby devices', icon: 'bluetooth', color: '#28a745' },
-        { title: 'WiFi Direct', desc: 'High-speed P2P', icon: 'wifi', color: '#0a7ea4' },
-        { title: 'USB Cable', desc: 'Direct connection', icon: 'cable.connector', color: '#ffc107' },
-        { title: 'QR Code', desc: 'Scan to share', icon: 'qrcode', color: '#dc3545' },
-    ];
-
+    // --- QR Full-Screen Views ---
     if (showQRScanner || showQRGenerator) {
-        // Simplified view for QR modes to use new styling as well
         const isScan = showQRScanner;
         return (
             <ThemedView style={styles.container}>
@@ -68,21 +76,42 @@ export default function DataTransferScreen() {
                     colors={['#0284C7', '#0369A1']}
                     style={[styles.header, { paddingTop: insets.top + 20 }]}
                 >
-                    <ThemedText type="hero" style={styles.headerTitle}>{isScan ? 'Scan QR' : 'My Code'}</ThemedText>
-                    <ThemedText style={styles.headerSubtitle}>{isScan ? 'Align code within frame' : 'Show this to another device'}</ThemedText>
+                    <ThemedText type="hero" style={styles.headerTitle}>
+                        {isScan ? 'Scan QR' : 'Doctor Handshake'}
+                    </ThemedText>
+                    <ThemedText style={styles.headerSubtitle}>
+                        {isScan ? 'Align code within frame' : 'Let the doctor scan this code'}
+                    </ThemedText>
                 </LinearGradient>
+
                 <View style={styles.content}>
                     <Card style={styles.qrContainer}>
                         {isScan ? (
-                            <QRScanner onQRCodeScanned={(data) => { setShowQRScanner(false); Alert.alert('Scanned', data); }} onCancel={() => setShowQRScanner(false)} />
+                            <QRScanner
+                                onQRCodeScanned={(data) => {
+                                    setShowQRScanner(false);
+                                    Alert.alert('Scanned', data);
+                                }}
+                                onCancel={() => setShowQRScanner(false)}
+                            />
                         ) : (
-                            <QRGenerator data="mayo-transfer-data" size={250} />
+                            <QRGenerator
+                                data={JSON.stringify({
+                                    token: currentSession.sessionToken,
+                                    id: currentSession.patientId,
+                                    instruction: 'SCAN_TO_PULL',
+                                })}
+                                size={250}
+                            />
                         )}
                     </Card>
                     <Button
                         variant="secondary"
                         title="Close"
-                        onPress={() => { setShowQRScanner(false); setShowQRGenerator(false); }}
+                        onPress={() => {
+                            setShowQRScanner(false);
+                            setShowQRGenerator(false);
+                        }}
                         style={{ marginTop: 24 }}
                     />
                 </View>
@@ -90,9 +119,9 @@ export default function DataTransferScreen() {
         );
     }
 
+    // --- Main Screen ---
     return (
         <ThemedView style={styles.container}>
-            {/* Fixed Header */}
             <LinearGradient
                 colors={['#0284C7', '#0369A1']}
                 style={[styles.header, { paddingTop: insets.top + 20 }]}
@@ -104,60 +133,86 @@ export default function DataTransferScreen() {
                 <ThemedText style={styles.headerSubtitle}>Securely share records offline</ThemedText>
             </LinearGradient>
 
-            {/* Scrollable Content */}
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 }}
             >
                 <View style={styles.content}>
 
+                    {/* Transfer Method Grid */}
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Transfer Methods</ThemedText>
                     <View style={styles.grid}>
-                        {methods.map((m, i) => (
-                            <TouchableOpacity key={i} style={styles.gridItem} onPress={() => handleTransfer(m.title)} activeOpacity={0.8}>
+                        {[
+                            { title: 'Bluetooth', icon: 'bluetooth', color: '#28a745' },
+                            { title: 'WiFi Direct', icon: 'wifi', color: '#0a7ea4' },
+                            { title: 'USB Cable', icon: 'cable.connector', color: '#ffc107' },
+                            { title: 'QR Code', icon: 'qrcode', color: '#dc3545' },
+                        ].map((m, i) => (
+                            <TouchableOpacity key={i} style={styles.gridItem} activeOpacity={0.8}>
                                 <Card variant="elevated" style={styles.methodCard}>
                                     <View style={[styles.methodIcon, { backgroundColor: m.color + '20' }]}>
                                         <IconSymbol name={m.icon as any} size={28} color={m.color} />
                                     </View>
-                                    <ThemedText type="cardTitle" style={{ marginBottom: 4 }}>{m.title}</ThemedText>
-                                    <ThemedText type="caption">{m.desc}</ThemedText>
+                                    <ThemedText type="cardTitle">{m.title}</ThemedText>
                                 </Card>
                             </TouchableOpacity>
                         ))}
                     </View>
 
+                    {/* Nearby BLE Devices */}
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Nearby Devices</ThemedText>
                     <Card variant="outlined" style={styles.deviceListCard}>
                         <BLEDeviceList onDeviceSelected={(d) => Alert.alert('Selected', d.name)} />
                     </Card>
 
+                    {/* Step 1: Secure Handshake */}
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>1. Secure Handshake</ThemedText>
                     <View style={styles.row}>
                         <Button
-                            title="Receive Data"
-                            icon="square.and.arrow.down"
-                            style={{ flex: 1, marginRight: 8 }}
-                            onPress={() => { }}
-                        />
-                        <Button
                             variant="outline"
-                            title="Generate QR"
+                            title={isHandshakeComplete ? 'Handshake Verified ✓' : 'Generate Handshake QR'}
                             icon="qrcode"
-                            style={{ flex: 1, marginLeft: 8 }}
-                            onPress={() => setShowQRGenerator(true)}
+                            style={{ flex: 1 }}
+                            onPress={handleGenerateQR}
                         />
                     </View>
 
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Connection Status</ThemedText>
+                    {/* Step 2: Establish Bridge */}
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>2. Establish Bridge</ThemedText>
                     <Card variant="flat" style={styles.statusCard}>
-                        <WiFiDirectManager onConnected={() => { }} onDisconnected={() => { }} />
+                        <WiFiDirectManager
+                            onConnected={(info) => {
+                                setConnectedPcIp(info.ipAddress);
+                                setIsHandshakeComplete(true);
+                            }}
+                            onDisconnected={handleResetSecurity}
+                        />
+
                         <View style={[styles.divider, { backgroundColor: borderColor }]} />
-                        <USBTransfer onDataTransfer={() => { }} />
+
+                        <USBTransfer
+                            isLocked={!isHandshakeComplete}
+                            onDisconnect={handleResetSecurity}
+                            onDataTransfer={(data) => console.log('USB Transfer Successful:', data)}
+                        />
                     </Card>
 
-                    <View style={{ marginTop: 32, alignItems: 'center' }}>
-                        <ThemedText type="caption">Version: {versionInfo.currentVersion}</ThemedText>
-                        <ThemedText type="caption">Last Sync: {versionInfo.lastUpdated}</ThemedText>
-                    </View>
+                    {/* Step 3: Push Data */}
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>3. Push Data</ThemedText>
+                    <Card variant="elevated" style={styles.statusCard}>
+                        <Button
+                            title="PUSH RECORDS TO PC"
+                            disabled={!isHandshakeComplete}
+                            onPress={handlePushData}
+                            style={{ backgroundColor: isHandshakeComplete ? '#28a745' : '#ccc' }}
+                        />
+                        <ThemedText style={styles.note}>
+                            {isHandshakeComplete
+                                ? `Ready to transfer${connectedPcIp ? ` → ${connectedPcIp}` : ''}`
+                                : 'Complete handshake & bridge first'}
+                        </ThemedText>
+                    </Card>
+
                 </View>
             </ScrollView>
         </ThemedView>
@@ -165,9 +220,7 @@ export default function DataTransferScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+    container: { flex: 1 },
     header: {
         paddingBottom: 24,
         alignItems: 'center',
@@ -182,42 +235,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
         elevation: 5,
     },
-    headerTitle: {
-        color: 'white',
-        marginBottom: 4,
-    },
-    headerSubtitle: {
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: 14,
-    },
-    content: {
-        padding: 24,
-        marginTop: -20,
-    },
-    sectionTitle: {
-        marginBottom: 16,
-        marginTop: 8,
-    },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    gridItem: {
-        width: (width - 48 - 12) / 2,
-    },
-    methodCard: {
-        padding: 16,
-        height: 140,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    headerTitle: { color: 'white', marginBottom: 4 },
+    headerSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
+    content: { padding: 24, marginTop: -20 },
+    sectionTitle: { marginBottom: 16, marginTop: 8 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
+    gridItem: { width: (width - 48 - 12) / 2 },
+    methodCard: { padding: 16, height: 120, justifyContent: 'center', alignItems: 'center' },
     methodIcon: {
         width: 48,
         height: 48,
@@ -226,29 +252,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 12,
     },
-    progressCard: {
-        padding: 32,
-        alignItems: 'center',
-    },
-    deviceListCard: {
-        padding: 0,
-        overflow: 'hidden',
-        minHeight: 100,
-    },
-    statusCard: {
-        padding: 16,
-    },
-    row: {
-        flexDirection: 'row',
-        marginVertical: 24,
-    },
-    divider: {
-        height: 1,
-        marginVertical: 16,
-    },
-    qrContainer: {
-        height: 400,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    deviceListCard: { padding: 0, overflow: 'hidden', minHeight: 100, marginBottom: 8 },
+    statusCard: { padding: 16, marginBottom: 20 },
+    row: { flexDirection: 'row', marginVertical: 10 },
+    divider: { height: 1, marginVertical: 16 },
+    qrContainer: { height: 400, justifyContent: 'center', alignItems: 'center' },
+    note: { fontSize: 12, textAlign: 'center', marginTop: 8, opacity: 0.6 },
 });

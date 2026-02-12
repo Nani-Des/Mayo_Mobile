@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Station | Offline Handshake</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #121212; color: white; padding: 50px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: #1e1e1e; border: 1px solid #333; padding: 30px; border-radius: 16px; width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #reader { width: 100%; border-radius: 8px; margin-bottom: 20px; border: 2px solid #0284c7; }
+        .status-ready { color: #00ff88; font-weight: bold; padding: 10px; border: 1px solid #00ff88; border-radius: 5px; margin-top: 15px; display: none; }
+        .data-log { background: #000; color: #00ff00; font-family: monospace; font-size: 11px; padding: 15px; text-align: left; border-radius: 8px; margin-top: 20px; display: none; height: 120px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: #0284c7;">Doctor Workstation</h2>
+        <p style="color: #888;">Step 1: Scan Patient Handshake QR</p>
+        
+        <div id="reader"></div>
+        
+        <div id="status" class="status-ready">✓ HANDSHAKE SUCCESSFUL</div>
+        
+        <div id="details" style="display:none; margin-top:15px; text-align: left; font-size: 13px;">
+            <p><b>Patient ID:</b> <span id="pid"></span></p>
+            <p><b>Handshake Key:</b> <span id="key"></span></p>
+            <p style="color: #ffaa00;">Waiting for USB data push...</p>
+        </div>
+
+        <div id="log" class="data-log">> Ready for USB pipe...</div>
+    </div>
+
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+const logBox = document.getElementById('log');
+
+// 1. Setup Event Listener for Server Logs
+// This connects to the /events endpoint we created in server.js
+const eventSource = new EventSource("http://localhost:3000/events");
+
+eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    // Show the hidden elements
+    document.getElementById('status').style.display = 'block';
+    document.getElementById('details').style.display = 'block';
+    logBox.style.display = 'block';
+
+    // Update the UI with the data from the phone
+    document.getElementById('pid').innerText = data.patientId;
+    document.getElementById('key').innerText = data.sessionToken;
+
+    // Append the log lines just like you wanted
+    const newLogSent = `<div style="margin-bottom: 5px; color: #aaa;">LOG --- USB PIPE DATA SENT --- ${JSON.stringify(data.fullData)}</div>`;
+    const newLogSuccess = `<div style="margin-bottom: 10px; color: #00ff00;">LOG USB Transfer Successful: ${JSON.stringify(data.fullData)}</div>`;
+    
+    logBox.innerHTML += newLogSent + newLogSuccess;
+    
+    // Auto-scroll to the bottom of the log
+    logBox.scrollTop = logBox.scrollHeight;
+};
+
+// 2. Existing QR Code Scanner Logic
+html5QrCode.start(
+    { facingMode: "user" }, 
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+        const data = JSON.parse(decodedText);
+        document.getElementById('status').style.display = 'block';
+        document.getElementById('details').style.display = 'block';
+        document.getElementById('log').style.display = 'block';
+        document.getElementById('pid').innerText = data.id;
+        document.getElementById('key').innerText = data.token;
+        
+        html5QrCode.stop();
+        console.log("Handshake Complete.");
+    }
+).catch(err => console.error(err));
+
+    </script>
+</body>
+</html>

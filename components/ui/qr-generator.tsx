@@ -11,9 +11,9 @@ interface QRGeneratorProps {
 export function QRGenerator({ data, size = 200 }: QRGeneratorProps) {
   return (
     <ThemedView style={styles.container}>
-      <ThemedText style={styles.title}>Share via QR Code</ThemedText>
+      <ThemedText style={styles.title}>Patient Identity Token</ThemedText>
       <ThemedText style={styles.instructions}>
-        Show this QR code to another device to initiate transfer
+        Doctor: Scan this code to authorize the transfer bridge.
       </ThemedText>
       
       <View style={styles.qrContainer}>
@@ -26,37 +26,16 @@ export function QRGenerator({ data, size = 200 }: QRGeneratorProps) {
       </View>
       
       <ThemedText style={styles.note}>
-        This QR code contains encrypted transfer information
+        This code expires once the session is closed.
       </ThemedText>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    marginBottom: 20,
-    opacity: 0.8,
-  },
-  qrContainer: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  note: {
-    fontSize: 12,
-    fontStyle: 'italic',
-    opacity: 0.7,
-    textAlign: 'center',
-  },
+  container: { alignItems: 'center', padding: 20 },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  instructions: { textAlign: 'center', marginBottom: 20, opacity: 0.8, fontSize: 14 },
+  qrContainer: { padding: 20, backgroundColor: 'white', borderRadius: 10, elevation: 3 },
+  note: { fontSize: 12, fontStyle: 'italic', opacity: 0.7, textAlign: 'center', marginTop: 20 },
 });
