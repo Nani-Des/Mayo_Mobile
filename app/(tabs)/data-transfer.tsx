@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,7 +15,7 @@ import { QRGenerator } from '@/components/ui/qr-generator';
 import { QRScanner } from '@/components/ui/qr-scanner';
 import { USBTransfer } from '@/components/ui/usb-transfer';
 import { WiFiDirectManager } from '@/components/ui/wifi-direct-manager';
-import { SyncService } from '@/app/services/SyncService';
+import { SyncService } from '@/lib/services/sync-service';
 
 const { width } = Dimensions.get('window');
 
@@ -33,7 +33,18 @@ export default function DataTransferScreen() {
     // IP extracted from QR scan — passed to WiFiDirectManager to auto-fill the input
     const [scannedIp, setScannedIp] = useState<string | undefined>(undefined);
 
-    const [currentSession] = useState(SyncService.getMockPatientHistory());
+    const [currentSession, setCurrentSession] = useState<any>(null);
+    const [selectedMethod, setSelectedMethod] = useState<'wifi' | 'usb' | 'ble' | 'qr'>('wifi');
+
+    useEffect(() => {
+        const loadInitData = async () => {
+            try {
+                const data = await SyncService.exportPatientData('p-123');
+                setCurrentSession(data);
+            } catch (e) { console.error(e); }
+        };
+        loadInitData();
+    }, []);
 
     const handleGenerateQR = () => {
         setShowQRGenerator(true);
@@ -49,6 +60,11 @@ export default function DataTransferScreen() {
     const handlePushData = async () => {
         if (!connectedPcIp) {
             Alert.alert('Connection Required', 'Please connect to the Doctor Station IP first.');
+            return;
+        }
+
+        if (!currentSession) {
+            Alert.alert('Loading', 'Data not ready yet');
             return;
         }
 
@@ -108,8 +124,8 @@ export default function DataTransferScreen() {
                         ) : (
                             <QRGenerator
                                 data={JSON.stringify({
-                                    token: currentSession.sessionToken,
-                                    id: currentSession.patientId,
+                                    token: currentSession?.transferId || 'loading',
+                                    id: currentSession?.patientId || 'p-123',
                                     instruction: 'SCAN_TO_PULL',
                                 })}
                                 size={250}
@@ -161,13 +177,24 @@ export default function DataTransferScreen() {
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Transfer Methods</ThemedText>
                     <View style={styles.grid}>
                         {[
-                            { title: 'Bluetooth', icon: 'bluetooth', color: '#28a745' },
-                            { title: 'WiFi Direct', icon: 'wifi', color: '#0a7ea4' },
-                            { title: 'USB Cable', icon: 'cable.connector', color: '#ffc107' },
-                            { title: 'QR Code', icon: 'qrcode', color: '#dc3545' },
+                            { id: 'ble', title: 'Bluetooth', icon: 'bluetooth', color: '#28a745' },
+                            { id: 'wifi', title: 'WiFi Direct', icon: 'wifi', color: '#0a7ea4' },
+                            { id: 'usb', title: 'USB Cable', icon: 'cable.connector', color: '#ffc107' },
+                            { id: 'qr', title: 'QR Code', icon: 'qrcode', color: '#dc3545' },
                         ].map((m, i) => (
-                            <TouchableOpacity key={i} style={styles.gridItem} activeOpacity={0.8}>
-                                <Card variant="elevated" style={styles.methodCard}>
+                            <TouchableOpacity
+                                key={i}
+                                style={styles.gridItem}
+                                activeOpacity={0.8}
+                                onPress={() => setSelectedMethod(m.id as any)}
+                            >
+                                <Card
+                                    variant={selectedMethod === m.id ? 'elevated' : 'outlined'}
+                                    style={[
+                                        styles.methodCard,
+                                        selectedMethod === m.id && { borderColor: m.color, borderWidth: 2 }
+                                    ]}
+                                >
                                     <View style={[styles.methodIcon, { backgroundColor: m.color + '20' }]}>
                                         <IconSymbol name={m.icon as any} size={28} color={m.color} />
                                     </View>
@@ -177,67 +204,87 @@ export default function DataTransferScreen() {
                         ))}
                     </View>
 
-                    {/* Nearby BLE Devices */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Nearby Devices</ThemedText>
-                    <Card variant="outlined" style={styles.deviceListCard}>
-                        <BLEDeviceList onDeviceSelected={(d) => Alert.alert('Selected', d.name)} />
-                    </Card>
+                    {/* Dynamic Content Based on Selection */}
+                    {selectedMethod === 'ble' && (
+                        <>
+                            <ThemedText type="subtitle" style={styles.sectionTitle}>Nearby Devices</ThemedText>
+                            <Card variant="outlined" style={styles.deviceListCard}>
+                                <BLEDeviceList onDeviceSelected={(d) => Alert.alert('Selected', d.name)} />
+                            </Card>
+                        </>
+                    )}
 
-                    {/* Step 1: Secure Handshake */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>1. Secure Handshake</ThemedText>
-                    <View style={styles.row}>
-                        <Button
-                            variant="outline"
-                            title={isHandshakeComplete ? 'Verified ✓' : 'Show My QR'}
-                            icon="qrcode"
-                            style={{ flex: 1, marginRight: 8 }}
-                            onPress={handleGenerateQR}
-                        />
-                        <Button
-                            variant="outline"
-                            title={scannedIp ? `IP: ${scannedIp}` : 'Scan Doctor QR'}
-                            icon="camera"
-                            style={{ flex: 1 }}
-                            onPress={() => setShowQRScanner(true)}
-                        />
-                    </View>
+                    {(selectedMethod === 'wifi' || selectedMethod === 'usb') && (
+                        <>
+                            {/* Step 1: Secure Handshake */}
+                            <ThemedText type="subtitle" style={styles.sectionTitle}>1. Secure Handshake</ThemedText>
+                            <View style={styles.row}>
+                                <Button
+                                    variant="outline"
+                                    title={isHandshakeComplete ? 'Verified ✓' : 'Show My QR'}
+                                    icon="qrcode"
+                                    style={{ flex: 1, marginRight: 8 }}
+                                    onPress={handleGenerateQR}
+                                />
+                                <Button
+                                    variant="outline"
+                                    title={scannedIp ? `IP: ${scannedIp}` : 'Scan Doctor QR'}
+                                    icon="camera"
+                                    style={{ flex: 1 }}
+                                    onPress={() => setShowQRScanner(true)}
+                                />
+                            </View>
 
-                    {/* Step 2: Establish Bridge */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>2. Establish Bridge</ThemedText>
-                    <Card variant="flat" style={styles.statusCard}>
-                        <WiFiDirectManager
-                            prefillIp={scannedIp}
-                            onConnected={(info) => {
-                                setConnectedPcIp(info.ipAddress);
-                                setIsHandshakeComplete(true);
-                            }}
-                            onDisconnected={handleResetSecurity}
-                        />
+                            {/* Step 2: Establish Bridge */}
+                            <ThemedText type="subtitle" style={styles.sectionTitle}>2. Establish Bridge</ThemedText>
+                            <Card variant="flat" style={styles.statusCard}>
+                                {selectedMethod === 'wifi' && (
+                                    <WiFiDirectManager
+                                        prefillIp={scannedIp}
+                                        onConnected={(info) => {
+                                            setConnectedPcIp(info.ipAddress);
+                                            setIsHandshakeComplete(true);
+                                        }}
+                                        onDisconnected={handleResetSecurity}
+                                    />
+                                )}
 
-                        <View style={[styles.divider, { backgroundColor: borderColor }]} />
+                                {selectedMethod === 'usb' && (
+                                    <USBTransfer
+                                        isLocked={!isHandshakeComplete}
+                                        onDisconnect={handleResetSecurity}
+                                        onDataTransfer={(data) => console.log('USB Transfer Successful:', data)}
+                                    />
+                                )}
+                            </Card>
 
-                        <USBTransfer
-                            isLocked={!isHandshakeComplete}
-                            onDisconnect={handleResetSecurity}
-                            onDataTransfer={(data) => console.log('USB Transfer Successful:', data)}
-                        />
-                    </Card>
+                            {/* Step 3: Push Data */}
+                            <ThemedText type="subtitle" style={styles.sectionTitle}>3. Push Data</ThemedText>
+                            <Card variant="elevated" style={styles.statusCard}>
+                                <Button
+                                    title="PUSH RECORDS TO PC"
+                                    disabled={!isHandshakeComplete}
+                                    onPress={handlePushData}
+                                    style={{ backgroundColor: isHandshakeComplete ? '#28a745' : '#ccc' }}
+                                />
+                                <ThemedText style={styles.note}>
+                                    {isHandshakeComplete
+                                        ? `Ready to transfer${connectedPcIp ? ` → ${connectedPcIp}` : ''}`
+                                        : 'Complete handshake & bridge first'}
+                                </ThemedText>
+                            </Card>
+                        </>
+                    )}
 
-                    {/* Step 3: Push Data */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>3. Push Data</ThemedText>
-                    <Card variant="elevated" style={styles.statusCard}>
-                        <Button
-                            title="PUSH RECORDS TO PC"
-                            disabled={!isHandshakeComplete}
-                            onPress={handlePushData}
-                            style={{ backgroundColor: isHandshakeComplete ? '#28a745' : '#ccc' }}
-                        />
-                        <ThemedText style={styles.note}>
-                            {isHandshakeComplete
-                                ? `Ready to transfer${connectedPcIp ? ` → ${connectedPcIp}` : ''}`
-                                : 'Complete handshake & bridge first'}
-                        </ThemedText>
-                    </Card>
+                    {selectedMethod === 'qr' && (
+                        <View style={{ alignItems: 'center', marginTop: 20 }}>
+                            <Button
+                                title="Generate Static QR"
+                                onPress={handleGenerateQR}
+                                style={{ width: '100%' }}
+                            />
+                        </View>
+                    )}
                 </View>
             </ScrollView>
         </ThemedView>
