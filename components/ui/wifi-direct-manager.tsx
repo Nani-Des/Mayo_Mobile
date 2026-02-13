@@ -88,7 +88,7 @@ const handleConnect = async () => {
       {!isConnected ? (
         <>
           <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Doctor Station IP</ThemedText>
+            <ThemedText style={styles.label}>Doctor Desktop IP</ThemedText>
             <TextInput
               style={[
                 styles.input,
