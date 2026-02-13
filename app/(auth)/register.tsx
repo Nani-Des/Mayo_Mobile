@@ -7,12 +7,13 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import { supabase } from "../../lib/supabaseClient";
+import { register } from "../../lib/api/auth";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
@@ -20,7 +21,7 @@ export default function Register() {
   const iconColor = useThemeColor({}, 'icon');
 
   async function handleRegister() {
-    if (!email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword || !fullName) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
@@ -36,21 +37,19 @@ export default function Register() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: "http://localhost:8081/confirmation",
-      },
-    });
-
-    if (error) {
-      Alert.alert("Registration Error", error.message);
-    } else {
-      Alert.alert("Success", "Registration successful! Check your email.");
+    try {
+      await register({
+        email,
+        password,
+        fullName,
+      });
+      Alert.alert("Success", "Registration successful! Please login.");
       router.replace("/(auth)/login");
+    } catch (error: any) {
+      Alert.alert("Registration Error", error.message || "Failed to register. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -73,6 +72,21 @@ export default function Register() {
           </View>
 
           <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Full Name</ThemedText>
+              <View style={[styles.inputContainer, { borderColor }]}>
+                <IconSymbol name="person.fill" size={20} color={iconColor} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: useThemeColor({}, 'text') }]}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Dr. John Doe"
+                  placeholderTextColor={Colors.light.tabIconDefault}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
             <View style={styles.inputGroup}>
               <ThemedText style={styles.label}>Email Address</ThemedText>
               <View style={[styles.inputContainer, { borderColor }]}>

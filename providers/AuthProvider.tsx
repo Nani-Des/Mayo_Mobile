@@ -1,38 +1,89 @@
-import { Session } from "@supabase/supabase-js";
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { getStoredAccessToken, isAuthenticated, login as apiLogin, LoginRequest } from "../lib/api/auth";
+import { router } from "expo-router";
 
 interface AuthContextType {
-  session: Session | null;
+  user: { id: string; email: string; fullName: string } | null;
   loading: boolean;
+  isLoggedIn: boolean;
+  login: (credentials: LoginRequest) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string; fullName: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Decode JWT token payload
+  const decodeToken = (token: string): { sub?: string; userId?: string; email?: string; fullName?: string; name?: string } | null => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload;
+    } catch {
+      return null;
+    }
+  };
+
+  // Extract user info from token
+  const extractUserFromToken = (token: string) => {
+    const payload = decodeToken(token);
+    if (!payload) return null;
+    return {
+      id: payload.sub || payload.userId || 'unknown',
+      email: payload.email || '',
+      fullName: payload.fullName || payload.name || '',
+    };
+  };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    }).catch((_err) => {
-      // Handle network or other errors gracefully
-      setLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
+    async function checkAuth() {
+      try {
+        const hasToken = await isAuthenticated();
+        setIsLoggedIn(hasToken);
+        
+        if (hasToken) {
+          const token = await getStoredAccessToken();
+          if (token) {
+            const userInfo = extractUserFromToken(token);
+            if (userInfo) {
+              setUser(userInfo);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Auth check failed:', error);
+        setIsLoggedIn(false);
+      } finally {
+        setLoading(false);
       }
-    );
+    }
 
-    return () => listener.subscription.unsubscribe();
+    checkAuth();
   }, []);
 
+  // Redirect when auth state changes
+  useEffect(() => {
+    if (!loading) {
+      if (isLoggedIn) {
+        // Redirect to tabs if logged in and on auth screen
+        router.replace("/(tabs)");
+      }
+    }
+  }, [isLoggedIn, loading]);
+
+  const login = async (credentials: LoginRequest) => {
+    const response = await apiLogin(credentials);
+    const userInfo = extractUserFromToken(response.accessToken);
+    if (userInfo) {
+      setUser(userInfo);
+      setIsLoggedIn(true);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ session, loading }}>
+    <AuthContext.Provider value={{ user, loading, isLoggedIn, login }}>
       {children}
     </AuthContext.Provider>
   );

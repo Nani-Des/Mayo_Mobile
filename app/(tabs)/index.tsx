@@ -1,7 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import type { LinearGradientProps } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import {StatusBar} from 'expo-status-bar';
+import { useEffect } from 'react';
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -9,13 +13,35 @@ import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAuth } from '@/providers/AuthProvider';
+
+// WatermelonDB imports commented out - JSI not available
+// import withObservables from '@nozbe/with-observables';
+// import { database } from '@/model';
+// import Patient from '@/model/Patient';
 
 const { width } = Dimensions.get('window');
 
-export default function HomeScreen() {
+interface HomeProps {
+  patients: any[];
+}
+
+const HomeScreen = ({ patients = [] }: HomeProps) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tintColor = useThemeColor({}, 'tint');
+  
+  const patient = patients[0]; // For demo, use the first patient
+  const greetingText = patient ? `Good Morning,` : 'Good Morning,'; // Keep "Good Morning," for now
+  const userName = patient ? patient.firstName : 'Guest';
+  const { isLoggedIn, loading } = useAuth(); // Removed 'user' from destructuring
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !isLoggedIn) {
+      router.replace('/(auth)/login');
+    }
+  }, [loading, isLoggedIn]);
 
   const features: {
     title: string;
@@ -50,10 +76,11 @@ export default function HomeScreen() {
     ];
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
+      <StatusBar style="light" />
       {/* Fixed Header */}
       <LinearGradient
-        colors={['#0284C7', '#0369A1']}
+        colors={['#0284C7', '#0369A1'] as const}
         style={[styles.header, { paddingTop: insets.top + 20 }]}
       >
         <View style={styles.headerTop}>
@@ -85,7 +112,7 @@ export default function HomeScreen() {
 
       {/* Scrollable Content */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        <ThemedView style={styles.content}>
+        <View style={styles.content}>
           {/* Quick Access Grid */}
           <View style={styles.sectionHeader}>
             <ThemedText type="subtitle">Quick Access</ThemedText>
@@ -139,9 +166,9 @@ export default function HomeScreen() {
             <IconSymbol name="wifi.slash" size={16} color={useThemeColor({}, 'textSecondary')} style={{ marginRight: 8 }} />
             <ThemedText type="caption" style={{ color: useThemeColor({}, 'textSecondary') }}>Working offline • Changes sync automatically</ThemedText>
           </Card>
-        </ThemedView>
+        </View>
       </ScrollView>
-    </View>
+    </ThemedView>
   );
 }
 
@@ -271,3 +298,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 });
+
+const enhance = (Component: React.FC<HomeProps>) => Component;
+
+export default enhance(HomeScreen);

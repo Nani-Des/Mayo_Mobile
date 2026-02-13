@@ -1,5 +1,5 @@
 // services/SyncService.ts
-export const SyncService = {
+const SyncService = {
   getMockPatientHistory: () => {
     return {
       patientId: "P-10293",
@@ -22,3 +22,5 @@ export const SyncService = {
     };
   }
 };
+
+export default SyncService;

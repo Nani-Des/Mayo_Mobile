@@ -30,10 +30,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="family"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol name="doc.text" color={color} size={24} />,
+          title: 'Family',
+          tabBarIcon: ({ color }) => <IconSymbol name="person.3.fill" color={color} size={24} />,
         }}
       />
       <Tabs.Screen

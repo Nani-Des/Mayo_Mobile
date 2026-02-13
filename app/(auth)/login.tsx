@@ -7,12 +7,13 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../../providers/AuthProvider";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const tintColor = useThemeColor({}, 'tint');
   const borderColor = useThemeColor({}, 'border');
@@ -26,17 +27,17 @@ export default function Login() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      Alert.alert("Login Error", error.message);
-    } else {
-      router.replace("/(tabs)");
+    try {
+      await login({
+        usernameOrEmail: email,
+        password: password,
+      });
+      // Navigation is handled by AuthProvider when isLoggedIn changes
+    } catch (error: any) {
+      Alert.alert("Login Error", error.message || "Failed to login. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -66,7 +67,7 @@ export default function Login() {
                 style={[styles.input, { color: useThemeColor({}, 'text') }]}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="doctor@mayo.edu"
+                placeholder="doctor@mayo.com"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 keyboardType="email-address"
                 autoCapitalize="none"
