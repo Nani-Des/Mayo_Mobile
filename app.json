@@ -41,7 +41,21 @@
         }
       ],
       "expo-web-browser",
+<<<<<<< HEAD
       "expo-sqlite"
+=======
+      [
+        "@morrowdigital/watermelondb-expo-plugin",
+        {
+          "android": {
+            "jsi": false
+          },
+          "ios": {
+            "jsi": false
+          }
+        }
+      ]
+>>>>>>> 1090099 (feat: redesinged layout)
     ],
     "experiments": {
       "typedRoutes": true,
