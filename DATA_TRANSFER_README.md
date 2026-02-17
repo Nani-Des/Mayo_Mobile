@@ -94,6 +94,25 @@ The system tracks:
 
 ## Usage
 
+Native BLE (react-native-ble-plx) notes
+--------------------------------------
+- This project supports an optional native BLE implementation using `react-native-ble-plx`.
+- Requirements:
+   - Install native dependency: `pnpm add react-native-ble-plx buffer` and follow the library's installation steps (iOS Pod install, Android manifest permissions).
+   - Android: request runtime permissions (ACCESS_FINE_LOCATION or BLUETOOTH_SCAN / BLUETOOTH_CONNECT on newer SDKs). The app includes a helper at `lib/services/ble-permissions.ts` that requests Android location permission.
+   - iOS: ensure `Info.plist` contains appropriate Bluetooth usage descriptions (`NSBluetoothAlwaysUsageDescription`, `NSBluetoothPeripheralUsageDescription`).
+
+Framing and robustness
+----------------------
+- BLE transfers use an explicit length-prefixed framing protocol: the sender prepends an 8-byte ASCII length header (zero-padded) followed by the JSON payload. The receiver accumulates chunks until it has the full payload, then parses JSON. This avoids heuristic parsing and is deterministic.
+
+Fallback and UX
+---------------
+- The code checks for the presence of the native BLE module and throws a descriptive error when missing. UI code should catch that error and present a graceful fallback (e.g., a simulated path or prompt to install native modules).
+
+Security
+--------
+- BLE transfers are offline and local; still consider encrypting payloads or using short-lived tokens if sensitive data is transported over insecure links.
 1. Navigate to the Data Transfer tab in the app
 2. Select a transfer method
 3. Follow the specific workflow for that method

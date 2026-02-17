@@ -18,6 +18,10 @@ const SyncService = {
           doctor: "Dr. House"
         }
       ],
+      familyMembers: [
+        { id: "FM-1", name: "Maria Rivera", relation: "Wife", age: 34 },
+        { id: "FM-2", name: "Carlos Rivera", relation: "Son", age: 5 }
+      ],
       sessionToken: "TMP-" + Math.random().toString(36).substr(2, 9)
     };
   }

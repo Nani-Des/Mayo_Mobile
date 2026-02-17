@@ -5,7 +5,7 @@ import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "../../providers/AuthProvider";
 
 export default function TabsLayout() {
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const colorScheme = useColorScheme();
 
   if (loading) return null;
@@ -41,6 +41,13 @@ export default function TabsLayout() {
         options={{
           title: 'Transfer',
           tabBarIcon: ({ color }) => <IconSymbol name="paperplane.fill" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol name="person.circle.fill" color={color} size={24} />,
         }}
       />
     </Tabs>

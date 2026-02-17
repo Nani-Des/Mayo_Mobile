@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
 interface WiFiDirectManagerProps {
-  onConnected: (networkInfo: { ssid: string; ipAddress: string }) => void;
+  onConnected: (networkInfo: { ssid: string; ipAddress: string; handshake?: { token?: string; hospitalId?: string; deviceId?: string } }) => void;
   onDisconnected: () => void;
   /** IP auto-filled from a QR scan — user can still edit before connecting */
   prefillIp?: string;
@@ -44,21 +44,31 @@ const handleConnect = async () => {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-        const response = await fetch(`http://${networkName}:3000/handshake`, {
-            method: 'GET',
-            signal: controller.signal,
+        // connect to port 8444 (Desktop Node Server) instead of 8443 (Gateway)
+        const response = await fetch(`http://${networkName}:8444/api/handshake`, {
+          method: 'GET',
+          signal: controller.signal,
         });
 
-        clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
-        if (response.ok) {
-            setIsConnected(true);
-            setIpAddress(networkName);
-            setConnectionStatus('Connected to Doctor PC');
-            onConnected({ ssid: 'Hotspot_Network', ipAddress: networkName });
-        } else {
-            throw new Error('Station rejected');
-        }
+      if (response.ok) {
+        // Try to parse optional handshake payload (token/hospitalId/deviceId)
+        let body: any = null;
+        try { body = await response.json(); } catch (e) { body = null; }
+
+        setIsConnected(true);
+        setIpAddress(networkName);
+        setConnectionStatus('Connected to Doctor PC');
+
+        const handshake = body && (body.token || body.hospitalId || body.deviceId)
+          ? { token: body.token, hospitalId: body.hospitalId, deviceId: body.deviceId }
+          : undefined;
+
+        onConnected({ ssid: 'Hotspot_Network', ipAddress: networkName, handshake });
+      } else {
+        throw new Error('Station rejected');
+      }
     } catch (error: any) {
         clearTimeout(timeoutId);
         setIsConnected(false);

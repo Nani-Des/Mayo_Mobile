@@ -6,7 +6,7 @@ import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
 type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
-type IconSymbolName = keyof typeof MAPPING;
+export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -19,12 +19,15 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'chevron.left': 'chevron-left',
+  'chevron.down': 'expand-more',
 
   // Connectivity
   'bluetooth': 'bluetooth',
   'wifi': 'wifi',
   'wifi.slash': 'wifi-off',
   'cable.connector': 'usb',
+  'sensor.tag.radiowaves.forward': 'bluetooth-audio',
 
   // Documents & Files
   'doc.text': 'description',
@@ -38,12 +41,15 @@ const MAPPING = {
   // Location & Calendar
   'location': 'place',
   'calendar': 'event',
+  'calendar.badge.clock': 'event-note',
 
   // User & Authentication
   'person.circle': 'account-circle',
+  'person.circle.fill': 'account-circle',
   'person.crop.rectangle.fill': 'badge',
   'person.fill': 'person',
-  'person': 'person',
+   'person': 'person',
+  'person.3.fill': 'groups',
   'envelope.fill': 'email',
   'lock.fill': 'lock',
   'lock': 'lock',
@@ -53,8 +59,23 @@ const MAPPING = {
   'heart.fill': 'favorite',
   'qrcode': 'qr-code-2',
   'info.circle': 'info',
+  'info.circle.fill': 'info',
   'arrow.right.circle.fill': 'arrow-circle-right',
+  'antenna.radiowaves.left.and.right': 'bluetooth-audio',
+  'camera': 'camera-alt',
+  'camera.fill': 'camera-alt',
+  'checkmark': 'check',
   'checkmark.circle.fill': 'check-circle',
+  'xmark': 'close',
+  'plus': 'add',
+  'arrow.up.circle.fill': 'arrow-circle-up',
+  'arrow.down.circle.fill': 'arrow-circle-down',
+  'lock.circle': 'lock',
+  'bell.circle': 'notifications',
+  'questionmark.circle': 'help-outline',
+  'envelope.circle': 'mail',
+  'plus.circle.fill': 'add-circle',
+  'exclamationmark.triangle': 'warning',
 } as unknown as IconMapping;
 
 // Default fallback icon for unmapped symbols

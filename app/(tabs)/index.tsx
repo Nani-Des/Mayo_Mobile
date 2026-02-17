@@ -14,34 +14,47 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/providers/AuthProvider';
+import { useFamilyData } from '@/hooks/useFamilyData';
+import { useMyPatientData, useFamilyMemberPatientData, useHealthMetrics } from '@/hooks/usePatientData';
+import { AccountSelector } from '@/components/AccountSelector';
 
-// WatermelonDB imports commented out - JSI not available
-// import withObservables from '@nozbe/with-observables';
-// import { database } from '@/model';
-// import Patient from '@/model/Patient';
+
 
 const { width } = Dimensions.get('window');
 
-interface HomeProps {
-  patients: any[];
-}
-
-const HomeScreen = ({ patients = [] }: HomeProps) => {
+const HomeScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tintColor = useThemeColor({}, 'tint');
   
-  const patient = patients[0]; // For demo, use the first patient
-  const greetingText = patient ? `Good Morning,` : 'Good Morning,'; // Keep "Good Morning," for now
-  const userName = patient ? patient.firstName : 'Guest';
-  const { isLoggedIn, loading } = useAuth(); // Removed 'user' from destructuring
+  // Auth and Family Data
+  const { user } = useAuth();
+  const { data: familyData } = useFamilyData();
+  
+  // Account Selection State
+  const [selectedAccountId, setSelectedAccountId] = React.useState<string>('me');
+  
+  // Patient Data Hooks
+  const { data: myPatient } = useMyPatientData();
+  const { data: familyMemberPatient } = useFamilyMemberPatientData(
+    selectedAccountId !== 'me' ? selectedAccountId : undefined
+  );
+  
+  // Current active patient
+  const activePatient = selectedAccountId === 'me' ? myPatient : familyMemberPatient;
+  
+  // Health Metrics
+  const { data: healthMetrics, isLoading: isHealthLoading } = useHealthMetrics(activePatient?.id);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !isLoggedIn) {
-      router.replace('/(auth)/login');
-    }
-  }, [loading, isLoggedIn]);
+  // Prepare accounts for selector
+  const accounts = [
+    { id: 'me', name: user?.fullName || 'Me', role: 'Primary Account', isMe: true },
+    ...(familyData?.members?.map(m => ({
+      id: m.id,
+      name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || 'Family Member',
+      role: m.relationship || 'Dependent',
+    })) || [])
+  ];
 
   const features: {
     title: string;
@@ -80,15 +93,22 @@ const HomeScreen = ({ patients = [] }: HomeProps) => {
       <StatusBar style="light" />
       {/* Fixed Header */}
       <LinearGradient
-        colors={['#0284C7', '#0369A1'] as const}
-        style={[styles.header, { paddingTop: insets.top + 20 }]}
+        colors={['#0284C7', '#0369A1']}
+        style={[styles.header, { paddingTop: insets.top + 10 }]}
       >
         <View style={styles.headerTop}>
           <View>
             <ThemedText style={styles.greeting}>Good Morning,</ThemedText>
-            <ThemedText type="hero" style={styles.username}>Sarah Doe</ThemedText>
+            <AccountSelector 
+              accounts={accounts}
+              selectedAccountId={selectedAccountId}
+              onSelectAccount={setSelectedAccountId}
+            />
           </View>
-          <TouchableOpacity style={styles.profileButton}>
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => router.push('/profile')}
+          >
             <IconSymbol name="person.circle" size={40} color="white" />
           </TouchableOpacity>
         </View>
@@ -98,13 +118,17 @@ const HomeScreen = ({ patients = [] }: HomeProps) => {
             <View style={styles.infoItem}>
               <IconSymbol name="heart.fill" size={16} color="white" />
               <ThemedText style={styles.infoLabel}>Health Score</ThemedText>
-              <ThemedText type="defaultSemiBold" style={styles.infoValue}>92%</ThemedText>
+              <ThemedText type="defaultSemiBold" style={styles.infoValue}>
+                {isHealthLoading ? '--' : `${healthMetrics?.healthScore || 0}%`}
+              </ThemedText>
             </View>
             <View style={styles.infoDivider} />
             <View style={styles.infoItem}>
-              <IconSymbol name="doc.text.fill" size={16} color="white" />
+              <IconSymbol name="calendar.badge.clock" size={16} color="white" />
               <ThemedText style={styles.infoLabel}>Next Visit</ThemedText>
-              <ThemedText type="defaultSemiBold" style={styles.infoValue}>Oct 24</ThemedText>
+              <ThemedText type="defaultSemiBold" style={styles.infoValue}>
+                {activePatient ? 'None' : '--'}
+              </ThemedText>
             </View>
           </View>
         </View>
@@ -141,24 +165,40 @@ const HomeScreen = ({ patients = [] }: HomeProps) => {
           {/* Recent Activity */}
           <View style={styles.sectionHeader}>
             <ThemedText type="subtitle">Recent Activity</ThemedText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/medical-records')}>
               <ThemedText type="link">See All</ThemedText>
             </TouchableOpacity>
           </View>
 
           <Card variant="flat" style={[styles.recentList, { backgroundColor: useThemeColor({}, 'card') }]}>
-            {[1, 2].map((_, i) => (
-              <View key={i} style={[styles.recentItem, { borderBottomColor: useThemeColor({}, 'border') }]}>
-                <View style={[styles.recentIcon, { backgroundColor: i === 0 ? tintColor + '15' : Colors.light.success + '15' }]}>
-                  <IconSymbol name={i === 0 ? 'doc.text.fill' : 'checkmark.circle.fill'} size={20} color={i === 0 ? tintColor : Colors.light.success} />
-                </View>
-                <View style={styles.recentInfo}>
-                  <ThemedText type="defaultSemiBold">{i === 0 ? 'Lab Results Available' : 'Appointment Confirmed'}</ThemedText>
-                  <ThemedText type="caption">Today, 9:41 AM</ThemedText>
-                </View>
-                <IconSymbol name="chevron.right" size={20} color={useThemeColor({}, 'icon')} />
+            {isHealthLoading ? (
+              <View style={styles.recentItem}>
+                <ThemedText type="caption">Loading activity...</ThemedText>
               </View>
-            ))}
+            ) : healthMetrics?.recentRecords && healthMetrics.recentRecords.length > 0 ? (
+              healthMetrics.recentRecords.map((record, i) => (
+                <TouchableOpacity 
+                  key={record.id} 
+                  style={[styles.recentItem, { borderBottomColor: useThemeColor({}, 'border') }]}
+                  onPress={() => router.push(`/medical-records/${record.id}` as any)}
+                >
+                  <View style={[styles.recentIcon, { backgroundColor: tintColor + '15' }]}>
+                    <IconSymbol name="doc.text.fill" size={20} color={tintColor} />
+                  </View>
+                  <View style={styles.recentInfo}>
+                    <ThemedText type="defaultSemiBold">{record.recordType.replace('_', ' ')}</ThemedText>
+                    <ThemedText type="caption">
+                      {new Date(record.createdAt).toLocaleDateString()}
+                    </ThemedText>
+                  </View>
+                  <IconSymbol name="chevron.right" size={20} color={useThemeColor({}, 'icon')} />
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.recentItem}>
+                <ThemedText type="caption">No recent activity</ThemedText>
+              </View>
+            )}
           </Card>
 
           {/* Offline Banner */}
@@ -299,6 +339,4 @@ const styles = StyleSheet.create({
   },
 });
 
-const enhance = (Component: React.FC<HomeProps>) => Component;
-
-export default enhance(HomeScreen);
+export default HomeScreen;

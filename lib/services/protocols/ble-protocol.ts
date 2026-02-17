@@ -1,198 +1,88 @@
-import {
-    Connection,
-    DiscoveredDevice,
-    TransferError,
-    TransferPackage,
-    TransferProgress,
-    TransferProtocol,
-} from '../../types/transfer';
+import { TransferProtocol, DiscoveredDevice, Connection, TransferPackage, TransferProgress } from '@/lib/types/transfer';
 
 /**
- * Bluetooth Low Energy (BLE) Transfer Protocol
- * 
- * NOTE: This is a SIMPLIFIED implementation for demonstration.
- * For production, you'll need to:
- * 1. Install expo-ble-plx or react-native-ble-plx
- * 2. Request Bluetooth permissions
- * 3. Handle actual BLE GATT services and characteristics
- * 4. Implement data chunking (BLE has ~512 byte MTU limit)
+ * BLEProtocol
+ *
+ * Lightweight, offline-friendly BLE protocol stub used by the app UI.
+ * This implementation simulates discovery/connect/send/receive for local
+ * Bluetooth transfers. Replace with a native BLE implementation later.
  */
 export class BLEProtocol implements TransferProtocol {
-    private connection: Connection | null = null;
-    private connectedDevice: DiscoveredDevice | null = null;
+  private connection: Connection | null = null;
 
-    async discover(): Promise<DiscoveredDevice[]> {
-        // TODO: Replace with real BLE scanning
-        // Example with expo-ble-plx:
-        // const manager = new BleManager();
-        // await manager.startDeviceScan(null, null, (error, device) => { ... });
+  async discover(): Promise<DiscoveredDevice[]> {
+    // Simulated discovery: return a small set of likely doctor station devices
+    await new Promise((r) => setTimeout(r, 800));
+    return [
+      { id: 'doctor-station-1', name: 'Doctor Station A', type: 'bluetooth', rssi: -45, metadata: {} },
+      { id: 'doctor-station-2', name: 'Doctor Station B', type: 'bluetooth', rssi: -60, metadata: {} },
+    ];
+  }
 
-        console.log('[BLE] Starting device discovery...');
+  async connect(device: DiscoveredDevice): Promise<Connection> {
+    // Simulate connection handshake
+    await new Promise((r) => setTimeout(r, 700));
+    this.connection = { deviceId: device.id, method: 'bluetooth', isConnected: true, connectedAt: new Date() };
+    return this.connection;
+  }
 
-        // Simulate discovery delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
+  async send(data: TransferPackage, onProgress?: (p: TransferProgress) => void): Promise<void> {
+    if (!this.connection?.isConnected) throw new Error('Not connected to any device');
 
-        // Mock devices for now - replace with real scan results
-        const mockDevices: DiscoveredDevice[] = [
-            {
-                id: 'ble-device-1',
-                name: 'Mayo Desktop 1',
-                type: 'bluetooth',
-                rssi: -65,
-                metadata: {
-                    serviceUUIDs: ['mayo-service-uuid'],
-                },
-            },
-            {
-                id: 'ble-device-2',
-                name: 'Mayo Desktop 2',
-                type: 'bluetooth',
-                rssi: -72,
-            },
-        ];
+    const total = JSON.stringify(data).length || 1;
+    let sent = 0;
+    const transferId = data.transferId;
 
-        console.log(`[BLE] Found ${mockDevices.length} devices`);
-        return mockDevices;
-    }
-
-    async connect(device: DiscoveredDevice): Promise<Connection> {
-        console.log(`[BLE] Connecting to ${device.name}...`);
-
-        // TODO: Replace with real BLE connection
-        // Example:
-        // const connectedDevice = await manager.connectToDevice(device.id);
-        // await connectedDevice.discoverAllServicesAndCharacteristics();
-
-        // Simulate connection delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        this.connectedDevice = device;
-        this.connection = {
-            deviceId: device.id,
-            method: 'bluetooth',
-            isConnected: true,
-            connectedAt: new Date(),
-        };
-
-        console.log(`[BLE] Connected to ${device.name}`);
-        return this.connection;
-    }
-
-    async send(
-        data: TransferPackage,
-        onProgress?: (progress: TransferProgress) => void
-    ): Promise<void> {
-        if (!this.connection?.isConnected) {
-            throw new TransferError('Not connected', 'CONNECTION_FAILED', 'bluetooth');
+    // Simulate chunked transfer over BLE
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        sent = Math.min(total, sent + Math.round(total * 0.2));
+        const pct = Math.min(99, Math.round((sent / total) * 100));
+        onProgress?.({ transferId, bytesTransferred: sent, totalBytes: total, percentage: pct, state: 'transferring' });
+        if (sent >= total) {
+          clearInterval(interval);
+          onProgress?.({ transferId, bytesTransferred: total, totalBytes: total, percentage: 100, state: 'completed' });
+          resolve();
         }
+      }, 400);
+    });
+  }
 
-        console.log('[BLE] Starting data transfer...');
+  async receive(onProgress?: (p: TransferProgress) => void): Promise<TransferPackage> {
+    if (!this.connection?.isConnected) throw new Error('Not connected to any device');
 
-        // TODO: Replace with real BLE write
-        // Example:
-        // 1. Convert data to chunks (BLE MTU limit ~512 bytes)
-        // 2. Write each chunk to characteristic
-        // 3. Wait for acknowledgment
-        // 4. Report progress
+    const transferId = `ble-pull-${Date.now()}`;
+    let progress = 0;
 
-        const dataString = JSON.stringify(data);
-        const totalBytes = dataString.length;
-        let bytesTransferred = 0;
-
-        // Simulate chunked transfer
-        const chunkSize = 512;
-        const chunks = Math.ceil(totalBytes / chunkSize);
-
-        for (let i = 0; i < chunks; i++) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-
-            bytesTransferred = Math.min((i + 1) * chunkSize, totalBytes);
-            const percentage = Math.round((bytesTransferred / totalBytes) * 100);
-
-            if (onProgress) {
-                onProgress({
-                    transferId: data.transferId,
-                    bytesTransferred,
-                    totalBytes,
-                    percentage,
-                    state: 'transferring',
-                });
-            }
-        }
-
-        console.log('[BLE] Transfer complete');
-    }
-
-    async receive(
-        onProgress?: (progress: TransferProgress) => void
-    ): Promise<TransferPackage> {
-        if (!this.connection?.isConnected) {
-            throw new TransferError('Not connected', 'CONNECTION_FAILED', 'bluetooth');
-        }
-
-        console.log('[BLE] Waiting to receive data...');
-
-        // TODO: Replace with real BLE read
-        // Example:
-        // 1. Subscribe to characteristic notifications
-        // 2. Receive chunks
-        // 3. Reassemble data
-        // 4. Verify checksum
-        // 5. Report progress
-
-        // Simulate receiving data
-        const mockData: TransferPackage = {
-            transferId: `transfer-${Date.now()}`,
-            patientId: 'patient-123',
-            data: {
-                records: [
-                    { type: 'lab', result: 'Updated lab results' },
-                    { type: 'prescription', medication: 'Updated prescription' },
-                ],
-            },
-            checksum: 'mock-checksum',
+    // Simulate receiving a small TransferPackage over BLE
+    return new Promise((resolve) => {
+      const interval = setInterval(() => {
+        progress += 25;
+        onProgress?.({ transferId, bytesTransferred: progress, totalBytes: 100, percentage: Math.min(100, progress), state: 'transferring' });
+        if (progress >= 100) {
+          clearInterval(interval);
+          const pkg: TransferPackage = {
+            transferId: `ble-${Date.now()}`,
+            patientId: 'unknown',
+            data: { message: 'Simulated BLE payload' },
+            checksum: 'simulated',
             timestamp: new Date(),
-        };
-
-        const totalBytes = JSON.stringify(mockData).length;
-
-        // Simulate progress
-        for (let i = 0; i <= 100; i += 10) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-
-            if (onProgress) {
-                onProgress({
-                    transferId: mockData.transferId,
-                    bytesTransferred: Math.round((totalBytes * i) / 100),
-                    totalBytes,
-                    percentage: i,
-                    state: 'transferring',
-                });
-            }
+            metadata: { version: '1', deviceId: this.connection!.deviceId, transferMethod: 'bluetooth' }
+          };
+          onProgress?.({ transferId, bytesTransferred: 100, totalBytes: 100, percentage: 100, state: 'completed' });
+          resolve(pkg);
         }
+      }, 350);
+    });
+  }
 
-        console.log('[BLE] Data received');
-        return mockData;
-    }
+  async disconnect(): Promise<void> {
+    this.connection = null;
+  }
 
-    async disconnect(): Promise<void> {
-        if (!this.connection) {
-            return;
-        }
-
-        console.log('[BLE] Disconnecting...');
-
-        // TODO: Replace with real BLE disconnect
-        // Example:
-        // await connectedDevice.cancelConnection();
-
-        this.connection = null;
-        this.connectedDevice = null;
-
-        console.log('[BLE] Disconnected');
-    }
-
-    getConnectionStatus(): Connection | null {
-        return this.connection;
-    }
+  getConnectionStatus(): Connection | null {
+    return this.connection;
+  }
 }
+
+export default BLEProtocol;

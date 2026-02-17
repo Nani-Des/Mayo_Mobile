@@ -18,6 +18,8 @@ export interface TransferPackage {
     metadata?: {
         version: string;
         deviceId: string;
+        hospitalId?: string;
+        doctorId?: string;
         transferMethod: TransferMethod;
     };
 }

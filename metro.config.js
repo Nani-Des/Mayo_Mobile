@@ -4,8 +4,6 @@ const config = getDefaultConfig(__dirname);
 
 // Enable symlinks for better monorepo support
 config.resolver.symlinks = true;
-
-// Fix for JSI-based native modules (WatermelonDB, react-native-worklets)
 config.resolver.unstable_enableSymlinks = true;
 
 // Watchman timeout increase for large projects

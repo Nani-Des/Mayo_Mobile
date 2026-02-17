@@ -8,15 +8,14 @@ import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-nat
 
 interface BLEDeviceListProps {
   onDeviceSelected: (device: DiscoveredDevice) => void;
+  /** Optional protocol instance to use for discovery (injected by caller) */
+  protocol?: any;
 }
 
-const bleProtocol = new BLEProtocol();
-
-export function BLEDeviceList({ onDeviceSelected }: BLEDeviceListProps) {
+export function BLEDeviceList({ onDeviceSelected, protocol }: BLEDeviceListProps) {
   const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const itemBackgroundColor = useThemeColor({}, 'backgroundSecondary');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
@@ -27,7 +26,8 @@ export function BLEDeviceList({ onDeviceSelected }: BLEDeviceListProps) {
     setDevices([]);
 
     try {
-      const discoveredDevices = await bleProtocol.discover();
+      const proto = protocol || (await import('@/lib/services/protocols/ble-protocol').then(m => new m.BLEProtocol()));
+      const discoveredDevices = await proto.discover();
       setDevices(discoveredDevices);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to scan for devices');

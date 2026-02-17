@@ -1,144 +1,50 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useThemeColor } from '@/hooks/use-theme-color';
-
-import { BLEDeviceList } from '@/components/ui/ble-device-list';
-import { QRGenerator } from '@/components/ui/qr-generator';
-import { QRScanner } from '@/components/ui/qr-scanner';
-import { USBTransfer } from '@/components/ui/usb-transfer';
-import { WiFiDirectManager } from '@/components/ui/wifi-direct-manager';
-import { SyncService } from '@/app/services/SyncService';
 
 const { width } = Dimensions.get('window');
 
 export default function DataTransferScreen() {
     const insets = useSafeAreaInsets();
-    const borderColor = useThemeColor({}, 'border');
+    const router = useRouter();
 
-    const [showQRScanner, setShowQRScanner] = useState(false);
-    const [showQRGenerator, setShowQRGenerator] = useState(false);
+    const transferMethods = [
+        { 
+            title: 'QR Code', 
+            icon: 'qrcode', 
+            color: '#DC2626',
+            route: '/transfer-qr'
+        },
+        { 
+            title: 'Bluetooth', 
+            icon: 'antenna.radiowaves.left.and.right', 
+            color: '#2563EB',
+            route: '/transfer-ble'
+        },
+        { 
+            title: 'WiFi Direct', 
+            icon: 'wifi', 
+            color: '#0D9488',
+            route: '/transfer-wifi'
+        },
+        { 
+            title: 'NFC Tap', 
+            icon: 'sensor.tag.radiowaves.forward', 
+            color: '#7C3AED',
+            route: '/transfer-nfc'
+        },
+    ];
 
-    // SECURITY STATES
-    const [isHandshakeComplete, setIsHandshakeComplete] = useState(false);
-    const [connectedPcIp, setConnectedPcIp] = useState<string | null>(null);
-
-    // IP extracted from QR scan — passed to WiFiDirectManager to auto-fill the input
-    const [scannedIp, setScannedIp] = useState<string | undefined>(undefined);
-
-    const [currentSession] = useState(SyncService.getMockPatientHistory());
-
-    const handleGenerateQR = () => {
-        setShowQRGenerator(true);
+    const handleMethodPress = (route: string) => {
+        router.push(route as any);
     };
 
-    const handleResetSecurity = () => {
-        setIsHandshakeComplete(false);
-        setConnectedPcIp(null);
-        Alert.alert('Security Locked', 'Connection severed. Handshake required to resume.');
-    };
-
-    // Send patient records to the connected Doctor Station PC
-    const handlePushData = async () => {
-        if (!connectedPcIp) {
-            Alert.alert('Connection Required', 'Please connect to the Doctor Station IP first.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`http://${connectedPcIp}:3000/transfer`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(currentSession),
-            });
-
-            if (response.ok) {
-                Alert.alert('Transfer Success', 'Patient records sent to Doctor Station.');
-            } else {
-                throw new Error('Server returned an error');
-            }
-        } catch (error) {
-            Alert.alert('Transfer Failed', 'Make sure server.js is running on your PC.');
-        }
-    };
-
-    // --- QR Full-Screen Views ---
-    if (showQRScanner || showQRGenerator) {
-        const isScan = showQRScanner;
-        return (
-            <ThemedView style={styles.container}>
-                <LinearGradient
-                    colors={['#0284C7', '#0369A1']}
-                    style={[styles.header, { paddingTop: insets.top + 20 }]}
-                >
-                    <ThemedText type="hero" style={styles.headerTitle}>
-                        {isScan ? 'Scan Doctor QR' : 'Doctor Handshake'}
-                    </ThemedText>
-                    <ThemedText style={styles.headerSubtitle}>
-                        {isScan ? "Point at the QR on the Doctor's PC" : 'Let the doctor scan this code'}
-                    </ThemedText>
-                </LinearGradient>
-
-                <View style={styles.content}>
-                    <Card style={styles.qrContainer}>
-                        {isScan ? (
-                            <QRScanner
-                                onQRCodeScanned={(data, parsedIp) => {
-                                    // Prevent multiple triggers
-                                    if (scannedIp) return;
-
-                                    if (parsedIp) {
-                                        setScannedIp(parsedIp);
-                                        setConnectedPcIp(parsedIp); // Store active connection
-                                        setIsHandshakeComplete(true); // Unlock USB immediately
-                                    }
-
-                                    // Close scanner shortly after
-                                    setTimeout(() => setShowQRScanner(false), 150);
-                                }}
-                                onCancel={() => setShowQRScanner(false)}
-                            />
-                        ) : (
-                            <QRGenerator
-                                data={JSON.stringify({
-                                    token: currentSession.sessionToken,
-                                    id: currentSession.patientId,
-                                    instruction: 'SCAN_TO_PULL',
-                                })}
-                                size={250}
-                            />
-                        )}
-                    </Card>
-
-                    {/* Hint text instead of alerts */}
-                    {scannedIp && (
-                        <ThemedText style={styles.ipHint}>
-                            ✓ Doctor Station IP auto-filled: {scannedIp}. USB bridge unlocked.
-                        </ThemedText>
-                    )}
-
-                    <Button
-                        variant="secondary"
-                        title="Close"
-                        onPress={() => {
-                            setShowQRScanner(false);
-                            setShowQRGenerator(false);
-                        }}
-                        style={{ marginTop: 24 }}
-                    />
-                </View>
-            </ThemedView>
-        );
-    }
-
-    // --- Main Screen ---
     return (
         <ThemedView style={styles.container}>
             <LinearGradient
@@ -146,7 +52,7 @@ export default function DataTransferScreen() {
                 style={[styles.header, { paddingTop: insets.top + 20 }]}
             >
                 <View style={styles.iconCircle}>
-                    <IconSymbol name="arrow.triangle.swap" size={40} color="#0284C7" />
+                    <IconSymbol name="arrow.triangle.swap" size={32} color="#0284C7" />
                 </View>
                 <ThemedText type="hero" style={styles.headerTitle}>Data Transfer</ThemedText>
                 <ThemedText style={styles.headerSubtitle}>Securely share records offline</ThemedText>
@@ -158,84 +64,40 @@ export default function DataTransferScreen() {
             >
                 <View style={styles.content}>
                     {/* Transfer Method Grid */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Transfer Methods</ThemedText>
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>Select Transfer Method</ThemedText>
+                    <ThemedText style={styles.description}>
+                        Choose a method to securely transfer your medical records to a Doctor's workstation.
+                    </ThemedText>
+                    
                     <View style={styles.grid}>
-                        {[
-                            { title: 'Bluetooth', icon: 'bluetooth', color: '#28a745' },
-                            { title: 'WiFi Direct', icon: 'wifi', color: '#0a7ea4' },
-                            { title: 'USB Cable', icon: 'cable.connector', color: '#ffc107' },
-                            { title: 'QR Code', icon: 'qrcode', color: '#dc3545' },
-                        ].map((m, i) => (
-                            <TouchableOpacity key={i} style={styles.gridItem} activeOpacity={0.8}>
+                        {transferMethods.map((method, index) => (
+                            <TouchableOpacity 
+                                key={index} 
+                                style={styles.gridItem} 
+                                activeOpacity={0.8}
+                                onPress={() => handleMethodPress(method.route)}
+                            >
                                 <Card variant="elevated" style={styles.methodCard}>
-                                    <View style={[styles.methodIcon, { backgroundColor: m.color + '20' }]}>
-                                        <IconSymbol name={m.icon as any} size={28} color={m.color} />
+                                    <View style={[styles.methodIcon, { backgroundColor: method.color + '15' }]}>
+                                        <IconSymbol name={method.icon as any} size={28} color={method.color} />
                                     </View>
-                                    <ThemedText type="cardTitle">{m.title}</ThemedText>
+                                    <ThemedText type="defaultSemiBold" style={styles.methodTitle}>{method.title}</ThemedText>
                                 </Card>
                             </TouchableOpacity>
                         ))}
                     </View>
 
-                    {/* Nearby BLE Devices */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Nearby Devices</ThemedText>
-                    <Card variant="outlined" style={styles.deviceListCard}>
-                        <BLEDeviceList onDeviceSelected={(d) => Alert.alert('Selected', d.name)} />
-                    </Card>
-
-                    {/* Step 1: Secure Handshake */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>1. Secure Handshake</ThemedText>
-                    <View style={styles.row}>
-                        <Button
-                            variant="outline"
-                            title={isHandshakeComplete ? 'Verified ✓' : 'Show My QR'}
-                            icon="qrcode"
-                            style={{ flex: 1, marginRight: 8 }}
-                            onPress={handleGenerateQR}
-                        />
-                        <Button
-                            variant="outline"
-                            title={scannedIp ? `IP: ${scannedIp}` : 'Scan Doctor QR'}
-                            icon="camera"
-                            style={{ flex: 1 }}
-                            onPress={() => setShowQRScanner(true)}
-                        />
-                    </View>
-
-                    {/* Step 2: Establish Bridge */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>2. Establish Bridge</ThemedText>
-                    <Card variant="flat" style={styles.statusCard}>
-                        <WiFiDirectManager
-                            prefillIp={scannedIp}
-                            onConnected={(info) => {
-                                setConnectedPcIp(info.ipAddress);
-                                setIsHandshakeComplete(true);
-                            }}
-                            onDisconnected={handleResetSecurity}
-                        />
-
-                        <View style={[styles.divider, { backgroundColor: borderColor }]} />
-
-                        <USBTransfer
-                            isLocked={!isHandshakeComplete}
-                            onDisconnect={handleResetSecurity}
-                            onDataTransfer={(data) => console.log('USB Transfer Successful:', data)}
-                        />
-                    </Card>
-
-                    {/* Step 3: Push Data */}
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>3. Push Data</ThemedText>
-                    <Card variant="elevated" style={styles.statusCard}>
-                        <Button
-                            title="PUSH RECORDS TO PC"
-                            disabled={!isHandshakeComplete}
-                            onPress={handlePushData}
-                            style={{ backgroundColor: isHandshakeComplete ? '#28a745' : '#ccc' }}
-                        />
-                        <ThemedText style={styles.note}>
-                            {isHandshakeComplete
-                                ? `Ready to transfer${connectedPcIp ? ` → ${connectedPcIp}` : ''}`
-                                : 'Complete handshake & bridge first'}
+                    {/* Info Card */}
+                    <Card variant="flat" style={styles.infoCard}>
+                        <View style={styles.infoContent}>
+                            <IconSymbol name="info.circle.fill" size={20} color="#0284C7" />
+                            <ThemedText type="defaultSemiBold" style={styles.infoTitle}>How it works</ThemedText>
+                        </View>
+                        <ThemedText style={styles.infoText}>
+                            1. Select a transfer method above{"\n"}
+                            2. Establish a connection with the Doctor's PC{"\n"}
+                            3. Select the records you wish to share{"\n"}
+                            4. Confirm the secure transmission
                         </ThemedText>
                     </Card>
                 </View>
@@ -247,7 +109,7 @@ export default function DataTransferScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     header: {
-        paddingBottom: 24,
+        paddingBottom: 30,
         alignItems: 'center',
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
@@ -260,28 +122,33 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 12,
-        elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 8,
     },
     headerTitle: { color: 'white', marginBottom: 4 },
-    headerSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
-    content: { padding: 24, marginTop: -20 },
-    sectionTitle: { marginBottom: 16, marginTop: 8 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
+    headerSubtitle: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '500' },
+    content: { padding: 24 },
+    sectionTitle: { marginBottom: 8 },
+    description: { opacity: 0.6, marginBottom: 24, lineHeight: 20 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
     gridItem: { width: (width - 48 - 12) / 2 },
-    methodCard: { padding: 16, height: 120, justifyContent: 'center', alignItems: 'center' },
+    methodCard: { padding: 20, height: 140, justifyContent: 'center', alignItems: 'center' },
     methodIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 12,
     },
-    deviceListCard: { padding: 0, overflow: 'hidden', minHeight: 100, marginBottom: 8 },
-    statusCard: { padding: 16, marginBottom: 20 },
-    row: { flexDirection: 'row', marginVertical: 10 },
-    divider: { height: 1, marginVertical: 16 },
-    qrContainer: { height: 400, justifyContent: 'center', alignItems: 'center' },
-    note: { fontSize: 12, textAlign: 'center', marginTop: 8, opacity: 0.6 },
-    ipHint: { fontSize: 12, color: '#28a745', fontWeight: '600', marginBottom: 8, marginTop: -4 },
+    methodTitle: {
+        fontSize: 14,
+    },
+    infoCard: { padding: 20, backgroundColor: 'rgba(2, 132, 199, 0.05)' },
+    infoContent: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+    infoTitle: { color: '#0284C7' },
+    infoText: { lineHeight: 26, opacity: 0.7, fontSize: 13 },
 });

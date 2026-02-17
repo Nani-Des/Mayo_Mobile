@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useState } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import { SyncService } from '@/app/services/SyncService';
+import SyncService from '@/app/services/SyncService';
 
 interface USBTransferProps {
   onDataTransfer: (data: any) => void;
