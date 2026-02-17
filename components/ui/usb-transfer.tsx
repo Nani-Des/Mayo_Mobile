@@ -1,9 +1,14 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { SyncService } from '@/lib/services/sync-service';
 import { useState } from 'react';
+<<<<<<< HEAD
 import { Alert, StyleSheet, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import SyncService from '@/app/services/SyncService';
+=======
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+>>>>>>> 86deab5da16b4bac244d489615a4f80ec156f5d9
 
 interface USBTransferProps {
   onDataTransfer: (data: any) => void;
@@ -28,10 +33,10 @@ export function USBTransfer({ onDataTransfer, isLocked, onDisconnect }: USBTrans
     setTransferProgress(0);
     setTransferStatus('No USB device connected');
     // CRITICAL: Tells the screen to lock the QR Handshake again
-    onDisconnect(); 
+    onDisconnect();
   };
 
-  const handleSendData = () => {
+  const handleSendData = async () => {
     // SECURITY CHECK: If screen is locked, block the function
     if (isLocked) {
       Alert.alert('Security Lock', 'Doctor must scan Handshake QR code before data can be pushed.');
@@ -40,20 +45,28 @@ export function USBTransfer({ onDataTransfer, isLocked, onDisconnect }: USBTrans
 
     setIsSending(true);
     setTransferStatus('Extracting Patient Delta...');
-    const dataPackage = SyncService.getMockPatientHistory();
 
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 25;
-      setTransferProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setIsSending(false);
-        setTransferStatus('Data Packet Transferred to PC!');
-        console.log("--- USB PIPE DATA SENT ---", dataPackage);
-        onDataTransfer(dataPackage);
-      }
-    }, 400);
+    try {
+      const dataPackage = await SyncService.exportPatientData('p-123');
+
+      // Simulate sending progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 25;
+        setTransferProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+          setIsSending(false);
+          setTransferStatus('Data Packet Transferred to PC!');
+          console.log("--- USB PIPE DATA SENT ---", dataPackage);
+          onDataTransfer(dataPackage);
+        }
+      }, 400);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Failed to export patient data');
+      setIsSending(false);
+    }
   };
 
   const handleReceiveData = () => {
@@ -80,7 +93,7 @@ export function USBTransfer({ onDataTransfer, isLocked, onDisconnect }: USBTrans
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="subtitle" style={styles.title}>USB Data Bridge</ThemedText>
-      
+
       <View style={[styles.statusContainer, { borderBottomColor: borderColor }]}>
         <ThemedText style={styles.statusLabel}>Physical Link:</ThemedText>
         <ThemedText style={[styles.statusValue, isConnected ? styles.connected : styles.disconnected]}>
@@ -91,7 +104,7 @@ export function USBTransfer({ onDataTransfer, isLocked, onDisconnect }: USBTrans
       <ThemedText style={styles.statusSubtext}>
         {isLocked ? "🔒 Locked: QR Required" : "🔓 Handshake: Authorized"}
       </ThemedText>
-      
+
       <ThemedText style={styles.statusValue}>{transferStatus}</ThemedText>
 
       {transferProgress > 0 && (
@@ -109,8 +122,8 @@ export function USBTransfer({ onDataTransfer, isLocked, onDisconnect }: USBTrans
           </TouchableOpacity>
         ) : (
           <>
-            <TouchableOpacity 
-              style={[styles.sendButton, (isLocked || isSending) && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.sendButton, (isLocked || isSending) && styles.disabledButton]}
               onPress={handleSendData}
               disabled={isSending || isLocked}
             >
@@ -118,13 +131,13 @@ export function USBTransfer({ onDataTransfer, isLocked, onDisconnect }: USBTrans
                 <ActivityIndicator color="white" />
               ) : (
                 <ThemedText style={styles.buttonText}>
-                   {isLocked ? "Handshake Missing" : "Send Patient Record"}
+                  {isLocked ? "Handshake Missing" : "Send Patient Record"}
                 </ThemedText>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.receiveButton, isLocked && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.receiveButton, isLocked && styles.disabledButton]}
               onPress={handleReceiveData}
               disabled={isLocked}
             >
